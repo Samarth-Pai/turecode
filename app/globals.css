@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #1A0F0A;
+  --surface: #2C1A10;
+  --surface-elevated: #3D2517;
+  --border-subtle: #5C3D2E;
+  --primary-gold: #CA8A04;
+  --primary-gold-hover: #B8780A;
+  --primary-gold-border: #DAA520;
+  --secondary-red: #991B1B;
+  --tertiary-purple: #581C87;
+  --foreground: #F5E6D3;
+  --muted: #BFA98A;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-spectral), Georgia, serif;
+  --font-serif: var(--font-spectral), Georgia, serif;
+  --font-display: var(--font-cinzel), Georgia, serif;
+  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #1A0F0A;
+  color: #F5E6D3;
+  font-family: var(--font-spectral), Georgia, serif;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, .font-cinzel {
+  font-family: var(--font-cinzel), Georgia, serif;
+}
+
+.font-spectral {
+  font-family: var(--font-spectral), Georgia, serif;
+}
+
+.font-fira {
+  font-family: var(--font-fira-code), ui-monospace, SFMono-Regular, monospace;
+}
+
+/* QuestUI Surfaces & Elevation */
+.quest-card {
+  background-color: #2C1A10;
+  border: 1px solid #5C3D2E;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(202, 138, 4, 0.2);
+  transition: box-shadow 300ms ease, border-color 300ms ease, background-color 300ms ease;
+}
+
+.quest-card-elevated {
+  background-color: #3D2517;
+  border: 1px solid rgba(202, 138, 4, 0.25);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(202, 138, 4, 0.25);
+}
+
+.quest-card-interactive:hover {
+  border-color: rgba(202, 138, 4, 0.45);
+  box-shadow: 0 4px 16px rgba(202, 138, 4, 0.28);
+}
+
+/* QuestUI Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1A0F0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #5C3D2E;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #CA8A04;
+}
+
+/* CodeMirror full-height integration */
+.cm-editor {
+  height: 100%;
+  outline: none !important;
+  font-family: var(--font-fira-code), ui-monospace, monospace !important;
+}
+.cm-scroller {
+  overflow: auto;
 }

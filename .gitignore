@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sandbox binary & local runtime db
+/sandbox/daemon
+/data/
+/.pgdata/
