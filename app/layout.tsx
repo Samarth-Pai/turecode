@@ -35,11 +35,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${cinzel.variable} ${spectral.variable} ${firaCode.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#1A0F0A] text-[#F5E6D3] selection:bg-[#CA8A04]/30 selection:text-[#F5E6D3]">
+      <body className="min-h-full flex flex-col bg-[#110A07] text-[#F5E6D3] selection:bg-[#CA8A04]/30 selection:text-[#F5E6D3]">
         <UserProvider>
           <Suspense
             fallback={
-              <header className="h-16 border-b border-[#5C3D2E] bg-[#2C1A10]" />
+              <header className="h-16 border-b border-[#462E22] bg-[#1D110B]" />
             }
           >
             <Navbar />

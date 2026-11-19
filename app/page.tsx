@@ -142,7 +142,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 space-y-8">
       {/* QuestUI Hero Banner */}
-      <section className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 sm:p-8 shadow-[0_4px_16px_rgba(202,138,4,0.22)] transition-all duration-300">
+      <section className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 sm:p-8 shadow-[0_4px_16px_rgba(202,138,4,0.22)] transition-all duration-300">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-[2px] border border-[#581C87] bg-[#581C87]/35 px-3 py-1 font-cinzel text-[11px] uppercase tracking-[1px] text-[#E9D5FF]">
@@ -163,7 +163,7 @@ export default function HomePage() {
             {isModerator ? (
               <Link
                 href="/moderator"
-                className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-6 py-3 font-cinzel text-sm font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300"
+                className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-6 py-3 font-cinzel text-sm font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300"
               >
                 Open Moderator Studio
                 <ArrowRight className="h-4 w-4" />
@@ -171,7 +171,7 @@ export default function HomePage() {
             ) : !currentUser ? (
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-6 py-3 font-cinzel text-sm font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300"
+                className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-6 py-3 font-cinzel text-sm font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300"
               >
                 Sign In to Participate
                 <ArrowRight className="h-4 w-4" />
@@ -185,10 +185,10 @@ export default function HomePage() {
         {/* Left Main Feed */}
         <div className="lg:col-span-8 space-y-6">
           {/* Join Contest by Code Card */}
-          <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)]">
+          <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] border border-[#CA8A04]/40 bg-[#3D2517] text-[#CA8A04]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] border border-[#CA8A04]/40 bg-[#2A1810] text-[#CA8A04]">
                   <KeyRound className="h-5 w-5" />
                 </div>
                 <div>
@@ -209,12 +209,12 @@ export default function HomePage() {
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
                   placeholder="E.G. ALGO-2026"
-                  className="w-40 h-10 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-fira text-xs font-semibold uppercase text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
+                  className="w-40 h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-xs font-semibold uppercase text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={joinBusy || !joinCodeInput.trim()}
-                  className="h-10 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_1px_3px_rgba(202,138,4,0.2)] hover:bg-[#B8780A] disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-300 cursor-pointer"
+                  className="h-10 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_1px_3px_rgba(202,138,4,0.2)] hover:bg-[#B8780A] disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-300 cursor-pointer"
                 >
                   {joinBusy ? "Joining..." : "Join"}
                 </button>
@@ -235,7 +235,7 @@ export default function HomePage() {
           </div>
 
           {/* Filter Chips */}
-          <div className="flex items-center gap-2 border-b border-[#5C3D2E] pb-3">
+          <div className="flex items-center gap-2 border-b border-[#462E22] pb-3">
             {[
               { id: "all", label: `All Contests (${contests.length})` },
               { id: "active", label: "Live Now" },
@@ -247,8 +247,8 @@ export default function HomePage() {
                 onClick={() => setFilter(t.id as "all" | "active" | "upcoming")}
                 className={`rounded-[2px] px-3 py-1 font-cinzel text-[11px] uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
                   filter === t.id
-                    ? "bg-[#CA8A04] text-[#1A0F0A] font-bold shadow-[0_1px_3px_rgba(202,138,4,0.2)]"
-                    : "border border-[#5C3D2E] bg-[#2C1A10] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3]"
+                    ? "bg-[#CA8A04] text-[#110A07] font-bold shadow-[0_1px_3px_rgba(202,138,4,0.2)]"
+                    : "border border-[#462E22] bg-[#1D110B] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3]"
                 }`}
               >
                 {t.label}
@@ -258,11 +258,11 @@ export default function HomePage() {
 
           {/* Contests List */}
           {loading && !data ? (
-            <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-10 text-center font-spectral text-sm text-[#BFA98A]">
+            <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
               Loading contests...
             </div>
           ) : filteredContests.length === 0 ? (
-            <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-10 text-center font-spectral text-sm text-[#BFA98A]">
+            <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
               No contests match this filter.
             </div>
           ) : (
@@ -293,7 +293,7 @@ export default function HomePage() {
                 return (
                   <div
                     key={contest.id}
-                    className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] hover:border-[#CA8A04]/60 hover:shadow-[0_4px_16px_rgba(202,138,4,0.28)] transition-all duration-300 space-y-4"
+                    className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] hover:border-[#CA8A04]/60 hover:shadow-[0_4px_16px_rgba(202,138,4,0.28)] transition-all duration-300 space-y-4"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="space-y-2 flex-1 min-w-[240px]">
@@ -328,7 +328,7 @@ export default function HomePage() {
                         {isEnrolled ? (
                           <Link
                             href={`/contests/${contest.id}`}
-                            className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_1px_3px_rgba(202,138,4,0.2)] hover:bg-[#B8780A] transition-all duration-300"
+                            className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_1px_3px_rgba(202,138,4,0.2)] hover:bg-[#B8780A] transition-all duration-300"
                           >
                             Enter Contest
                             <ArrowRight className="h-3.5 w-3.5" />
@@ -357,7 +357,7 @@ export default function HomePage() {
                         )}
 
                         {isModerator && contest.joinCode && (
-                          <div className="flex items-center gap-2 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-2.5 py-1 text-xs">
+                          <div className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 text-xs">
                             <span className="font-spectral text-[#BFA98A]">Code:</span>
                             <code className="font-fira font-semibold text-[#CA8A04]">
                               {contest.joinCode}
@@ -382,7 +382,7 @@ export default function HomePage() {
                     {inlineJoinContestId === contest.id && !isEnrolled && (
                       <form
                         onSubmit={(e) => handleJoinSubmit(inlineCode, e)}
-                        className="flex flex-wrap items-center gap-2 rounded-[4px] border border-[#CA8A04]/40 bg-[#1A0F0A] p-3"
+                        className="flex flex-wrap items-center gap-2 rounded-[4px] border border-[#CA8A04]/40 bg-[#110A07] p-3"
                       >
                         <span className="font-spectral text-xs text-[#F5E6D3]">
                           Joining Code for {contest.title}:
@@ -392,12 +392,12 @@ export default function HomePage() {
                           value={inlineCode}
                           onChange={(e) => setInlineCode(e.target.value.toUpperCase())}
                           placeholder="Enter code..."
-                          className="w-36 rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-2.5 py-1.5 font-fira text-xs uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                          className="w-36 rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                         />
                         <button
                           type="submit"
                           disabled={joinBusy}
-                          className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-1.5 font-cinzel text-xs font-bold uppercase text-[#1A0F0A] hover:bg-[#B8780A] cursor-pointer"
+                          className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-1.5 font-cinzel text-xs font-bold uppercase text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
                         >
                           Unlock
                         </button>
@@ -405,7 +405,7 @@ export default function HomePage() {
                     )}
 
                     {/* Rounds Grid */}
-                    <div className="border-t border-[#3D2517] pt-3.5 space-y-2.5">
+                    <div className="border-t border-[#2A1810] pt-3.5 space-y-2.5">
                       <div className="flex items-center gap-1.5 font-cinzel text-[11px] font-semibold uppercase tracking-[1px] text-[#BFA98A]">
                         <Layers className="h-3.5 w-3.5 text-[#CA8A04]" />
                         Rounds ({sortedRounds.length})
@@ -416,7 +416,7 @@ export default function HomePage() {
                           return (
                             <div
                               key={round.id}
-                              className="flex items-center justify-between gap-2 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3.5 py-2.5 hover:bg-[#3D2517]/50 transition-colors duration-300"
+                              className="flex items-center justify-between gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3.5 py-2.5 hover:bg-[#2A1810]/50 transition-colors duration-300"
                             >
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ export default function HomePage() {
                                     className={`rounded-[2px] px-2 py-0.5 font-cinzel text-[10px] font-semibold uppercase tracking-[1px] ${
                                       round.type === "coding"
                                         ? "border border-[#581C87] bg-[#581C87]/35 text-[#E9D5FF]"
-                                        : "border border-[#5C3D2E] bg-[#3D2517] text-[#CA8A04]"
+                                        : "border border-[#462E22] bg-[#2A1810] text-[#CA8A04]"
                                     }`}
                                   >
                                     {round.type}
@@ -455,14 +455,14 @@ export default function HomePage() {
 
         {/* Right Sidebar */}
         <aside className="lg:col-span-4 space-y-5">
-          <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] space-y-4">
+          <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] space-y-4">
             <h3 className="font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#CA8A04]">
               Adventurer Profile
             </h3>
             {currentUser ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DAA520] bg-[#CA8A04] font-cinzel text-base font-bold text-[#1A0F0A] uppercase shadow-[0_0_20px_rgba(202,138,4,0.3)]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DAA520] bg-[#CA8A04] font-cinzel text-base font-bold text-[#110A07] uppercase shadow-[0_0_20px_rgba(202,138,4,0.3)]">
                     {currentUser.name.charAt(0)}
                   </div>
                   <div>
@@ -478,7 +478,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3 text-center">
+                  <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3 text-center">
                     <div className="font-cinzel text-xl font-bold text-[#F5E6D3]">
                       {isModerator ? contests.length : enrolledContestIds.length}
                     </div>
@@ -486,7 +486,7 @@ export default function HomePage() {
                       {isModerator ? "Managed" : "Joined"}
                     </div>
                   </div>
-                  <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3 text-center">
+                  <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3 text-center">
                     <div className="font-cinzel text-xl font-bold text-[#CA8A04]">4</div>
                     <div className="font-spectral text-xs text-[#BFA98A]">Languages</div>
                   </div>
@@ -499,7 +499,7 @@ export default function HomePage() {
                 </p>
                 <Link
                   href="/login"
-                  className="block w-full rounded-[4px] border border-[#DAA520] bg-[#CA8A04] py-2.5 text-center font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] hover:bg-[#B8780A] transition-all duration-300"
+                  className="block w-full rounded-[4px] border border-[#DAA520] bg-[#CA8A04] py-2.5 text-center font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] hover:bg-[#B8780A] transition-all duration-300"
                 >
                   Sign In / Create Account
                 </Link>
@@ -507,7 +507,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] space-y-3">
+          <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] space-y-3">
             <div className="flex items-center gap-2 font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#CA8A04]">
               <Terminal className="h-4 w-4" />
               Supported Languages
@@ -516,7 +516,7 @@ export default function HomePage() {
               {["C (GCC 16)", "C++ (G++ 16)", "Java 27", "Python 3"].map((l) => (
                 <div
                   key={l}
-                  className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-[#F5E6D3]"
+                  className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-[#F5E6D3]"
                 >
                   {l}
                 </div>

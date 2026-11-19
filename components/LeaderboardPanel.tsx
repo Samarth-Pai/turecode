@@ -136,8 +136,8 @@ export function LeaderboardPanel({
     data?.mcqSubmissions.filter((s) => s.userId === inspectUserId) ?? [];
 
   return (
-    <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] shadow-[0_8px_24px_rgba(0,0,0,0.45)] overflow-hidden font-spectral text-[#F5E6D3]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#5C3D2E] bg-[#1A0F0A]/50 px-5 py-4">
+    <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] shadow-[0_8px_24px_rgba(0,0,0,0.45)] overflow-hidden font-spectral text-[#F5E6D3]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#462E22] bg-[#110A07]/50 px-5 py-4">
         <div>
           <h3 className="font-cinzel text-base font-bold text-[#F5E6D3] flex items-center gap-2">
             <span className="text-[#CA8A04]">★</span>
@@ -154,7 +154,7 @@ export function LeaderboardPanel({
           <select
             value={selectedRoundId}
             onChange={(e) => setSelectedRoundId(e.target.value)}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-spectral text-xs font-medium text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+            className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs font-medium text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
           >
             <option value="all">Overall Contest (All Rounds)</option>
             {rounds.map((r) => (
@@ -167,7 +167,7 @@ export function LeaderboardPanel({
           <button
             type="button"
             onClick={loadLeaderboard}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
+            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
           >
             Refresh
           </button>
@@ -175,7 +175,7 @@ export function LeaderboardPanel({
           <button
             type="button"
             onClick={exportCsv}
-            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] hover:bg-[#B8780A] transition-colors duration-300 cursor-pointer"
+            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] transition-colors duration-300 cursor-pointer"
           >
             Export CSV
           </button>
@@ -193,7 +193,7 @@ export function LeaderboardPanel({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-[#5C3D2E] bg-[#1A0F0A]/70 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
+            <thead className="border-b border-[#462E22] bg-[#110A07]/70 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
               <tr>
                 <th className="px-4 py-3">Rank</th>
                 <th className="px-4 py-3">Participant</th>
@@ -214,23 +214,23 @@ export function LeaderboardPanel({
                 <th className="px-4 py-3 text-right">Inspector</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#5C3D2E]/50">
+            <tbody className="divide-y divide-[#462E22]/50">
               {data.leaderboard.map((entry) => {
                 const rankBadge =
                   entry.rank === 1
                     ? "bg-[#CA8A04]/25 text-[#CA8A04] border-[#DAA520]"
                     : entry.rank === 2
-                    ? "bg-[#3D2517] text-[#F5E6D3] border-[#BFA98A]/60"
+                    ? "bg-[#2A1810] text-[#F5E6D3] border-[#BFA98A]/60"
                     : entry.rank === 3
                     ? "bg-[#991B1B]/25 text-[#FCA5A5] border-[#B91C1C]"
-                    : "bg-[#1A0F0A] text-[#BFA98A] border-[#5C3D2E]";
+                    : "bg-[#110A07] text-[#BFA98A] border-[#462E22]";
 
                 const vCount = entry.violations ?? 0;
 
                 return (
                   <tr
                     key={entry.userId}
-                    className="hover:bg-[#3D2517]/50 transition-colors duration-300"
+                    className="hover:bg-[#2A1810]/50 transition-colors duration-300"
                   >
                     <td className="px-4 py-3">
                       <span
@@ -272,7 +272,7 @@ export function LeaderboardPanel({
                             ? "border-[#B91C1C] bg-[#991B1B]/25 text-[#F87171]"
                             : vCount > 0
                             ? "border-[#CA8A04]/50 bg-[#CA8A04]/20 text-[#CA8A04]"
-                            : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A]"
+                            : "border-[#462E22] bg-[#110A07] text-[#BFA98A]"
                         }`}
                       >
                         {vCount} / 7
@@ -287,7 +287,7 @@ export function LeaderboardPanel({
                       <button
                         type="button"
                         onClick={() => setInspectUserId(entry.userId)}
-                        className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
+                        className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
                       >
                         Inspect
                       </button>
@@ -302,9 +302,9 @@ export function LeaderboardPanel({
 
       {/* Submission Inspector Modal */}
       {inspectUserId && inspectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A0F0A]/85 p-4 backdrop-blur-md">
-          <div className="flex max-h-[85vh] w-full max-w-4xl flex-col rounded-[6px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] shadow-[0_12px_40px_rgba(0,0,0,0.65)] overflow-hidden">
-            <div className="flex items-center justify-between border-b border-[#5C3D2E] px-6 py-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
+          <div className="flex max-h-[85vh] w-full max-w-4xl flex-col rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] shadow-[0_12px_40px_rgba(0,0,0,0.65)] overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[#462E22] px-6 py-4">
               <div>
                 <h4 className="font-cinzel text-base font-bold text-[#F5E6D3]">
                   Submission Inspector — {inspectedEntry.userName} (@{inspectedEntry.userHandle})
@@ -317,7 +317,7 @@ export function LeaderboardPanel({
               <button
                 type="button"
                 onClick={() => setInspectUserId(null)}
-                className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-3 py-1 font-cinzel text-xs font-semibold text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
+                className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3 py-1 font-cinzel text-xs font-semibold text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
               >
                 Close
               </button>
@@ -335,14 +335,14 @@ export function LeaderboardPanel({
                     {inspectedCoding.map((sub) => (
                       <div
                         key={sub.id}
-                        className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-4 space-y-2"
+                        className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-2"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <span className="font-cinzel font-semibold text-sm text-[#F5E6D3]">
                               {qTitleMap.get(sub.questionId) || sub.questionId}
                             </span>
-                            <span className="rounded-[2px] border border-[#5C3D2E] bg-[#2C1A10] px-2 py-0.5 font-fira text-[11px] uppercase text-[#CA8A04]">
+                            <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2 py-0.5 font-fira text-[11px] uppercase text-[#CA8A04]">
                               {sub.language}
                             </span>
                             <span
@@ -360,7 +360,7 @@ export function LeaderboardPanel({
                             {new Date(sub.submittedAt).toLocaleString()}
                           </div>
                         </div>
-                        <pre className="max-h-60 overflow-auto rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-3 font-fira text-xs text-[#F5E6D3]">
+                        <pre className="max-h-60 overflow-auto rounded-[4px] border border-[#462E22] bg-[#1D110B] p-3 font-fira text-xs text-[#F5E6D3]">
                           {sub.sourceCode}
                         </pre>
                       </div>
@@ -380,7 +380,7 @@ export function LeaderboardPanel({
                     {inspectedMcq.map((sub) => (
                       <div
                         key={sub.id}
-                        className="flex items-center justify-between rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-xs"
+                        className="flex items-center justify-between rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-xs"
                       >
                         <div>
                           <div className="font-cinzel font-semibold text-[#F5E6D3]">

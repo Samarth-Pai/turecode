@@ -26,11 +26,11 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] shadow-[0_2px_8px_rgba(202,138,4,0.2)]">
+    <header className="sticky top-0 z-40 h-16 border-b border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] shadow-[0_2px_8px_rgba(202,138,4,0.2)]">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[4px] border border-[#DAA520] bg-[#CA8A04] text-[#1A0F0A] shadow-[0_1px_3px_rgba(202,138,4,0.3)] transition-all duration-300 group-hover:bg-[#B8780A]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[4px] border border-[#DAA520] bg-[#CA8A04] text-[#110A07] shadow-[0_1px_3px_rgba(202,138,4,0.3)] transition-all duration-300 group-hover:bg-[#B8780A]">
               <Code2 className="h-5 w-5" />
             </div>
             <div className="flex flex-col leading-none">
@@ -56,8 +56,8 @@ export function Navbar() {
                   href={item.href}
                   className={`inline-flex items-center gap-2 rounded-[4px] px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 ${
                     active
-                      ? "border border-[#CA8A04] bg-[#3D2517] text-[#F5E6D3] shadow-[0_0_20px_rgba(202,138,4,0.25)]"
-                      : "text-[#BFA98A] hover:bg-[#3D2517] hover:text-[#F5E6D3]"
+                      ? "border border-[#CA8A04] bg-[#2A1810] text-[#F5E6D3] shadow-[0_0_20px_rgba(202,138,4,0.25)]"
+                      : "text-[#BFA98A] hover:bg-[#2A1810] hover:text-[#F5E6D3]"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5 text-[#CA8A04]" />
@@ -70,11 +70,11 @@ export function Navbar() {
 
         <div className="flex items-center gap-3">
           {loading ? (
-            <div className="h-8 w-24 animate-pulse rounded-[4px] bg-[#3D2517]" />
+            <div className="h-8 w-24 animate-pulse rounded-[4px] bg-[#2A1810]" />
           ) : currentUser ? (
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2.5 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#DAA520] bg-[#CA8A04] font-cinzel text-xs font-bold text-[#1A0F0A] uppercase">
+              <div className="hidden sm:flex items-center gap-2.5 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#DAA520] bg-[#CA8A04] font-cinzel text-xs font-bold text-[#110A07] uppercase">
                   {currentUser.name.charAt(0)}
                 </div>
                 <div className="leading-tight">
@@ -90,7 +90,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#5C3D2E] bg-transparent px-3 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.8px] text-[#BFA98A] hover:bg-[#3D2517] hover:text-[#F5E6D3] transition-all duration-300 cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#462E22] bg-transparent px-3 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.8px] text-[#BFA98A] hover:bg-[#2A1810] hover:text-[#F5E6D3] transition-all duration-300 cursor-pointer"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 <span>Sign Out</span>
@@ -107,7 +107,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="/login?mode=register"
-                className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.8px] text-[#1A0F0A] shadow-[0_1px_3px_rgba(202,138,4,0.2)] hover:bg-[#B8780A] transition-all duration-300"
+                className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.8px] text-[#110A07] shadow-[0_1px_3px_rgba(202,138,4,0.2)] hover:bg-[#B8780A] transition-all duration-300"
               >
                 Get Started
               </Link>

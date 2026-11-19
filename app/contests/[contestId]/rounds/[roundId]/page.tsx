@@ -79,14 +79,14 @@ function RoundArenaContent() {
   if (!currentUser) {
     return (
       <div className="mx-auto max-w-lg p-12 text-center">
-        <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-8 space-y-3 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-8 space-y-3 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
           <h1 className="font-cinzel text-lg font-bold text-[#F5E6D3]">Sign In Required</h1>
           <p className="font-spectral text-sm text-[#BFA98A]">
             Please sign in and join <strong className="text-[#F5E6D3]">{contest.title}</strong> with its joining code to access this round.
           </p>
           <Link
             href="/login"
-            className="inline-block rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A]"
+            className="inline-block rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07]"
           >
             Sign In
           </Link>
@@ -98,7 +98,7 @@ function RoundArenaContent() {
   if (!isEnrolled) {
     return (
       <div className="mx-auto max-w-lg p-12 text-center">
-        <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-8 space-y-3 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-8 space-y-3 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
           <h1 className="font-cinzel text-lg font-bold text-[#F5E6D3]">
             Joining Code Required
           </h1>
@@ -108,7 +108,7 @@ function RoundArenaContent() {
           </p>
           <Link
             href={`/contests/${contestId}`}
-            className="inline-block rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A]"
+            className="inline-block rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07]"
           >
             Go to Contest Page to Join
           </Link>
@@ -120,7 +120,7 @@ function RoundArenaContent() {
   if (scheduleStatus === "UPCOMING" && !isModerator) {
     return (
       <div className="mx-auto max-w-xl p-12 text-center">
-        <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-8 space-y-3 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-8 space-y-3 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
           <span className="inline-block rounded-[2px] bg-[#CA8A04]/20 px-3 py-1 font-cinzel text-[11px] uppercase tracking-[1px] text-[#CA8A04]">
             Round Scheduled — Not Started Yet
           </span>
@@ -160,7 +160,7 @@ function RoundArenaContent() {
       >
         <div className="flex min-h-0 flex-1 flex-col">
           {scheduleStatus !== "ACTIVE" && isModerator && (
-            <div className="border-b border-[#CA8A04]/30 bg-[#3D2517] px-4 py-2 text-center font-spectral text-xs text-[#CA8A04]">
+            <div className="border-b border-[#CA8A04]/30 bg-[#2A1810] px-4 py-2 text-center font-spectral text-xs text-[#CA8A04]">
               Moderator Preview Mode — This round is currently <strong>{scheduleStatus}</strong>{" "}
               ({new Date(round.startTime).toLocaleString()} →{" "}
               {new Date(round.endTime).toLocaleString()}).

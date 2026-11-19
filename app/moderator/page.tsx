@@ -85,8 +85,8 @@ function RoundEditorCard({
   };
 
   return (
-    <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 space-y-5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] font-spectral text-[#F5E6D3]">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#5C3D2E] pb-4">
+    <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 space-y-5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] font-spectral text-[#F5E6D3]">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#462E22] pb-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -104,7 +104,7 @@ function RoundEditorCard({
                   ? "border-[#22C55E]/40 bg-[#22C55E]/15 text-[#22C55E]"
                   : status === "UPCOMING"
                   ? "border-[#CA8A04]/50 bg-[#CA8A04]/15 text-[#CA8A04]"
-                  : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A]"
+                  : "border-[#462E22] bg-[#110A07] text-[#BFA98A]"
               }`}
             >
               {status}
@@ -119,7 +119,7 @@ function RoundEditorCard({
         <div className="flex items-center gap-2">
           <Link
             href={`/contests/${contestId}/rounds/${round.id}`}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300"
+            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300"
           >
             Preview Round →
           </Link>
@@ -135,7 +135,7 @@ function RoundEditorCard({
       </div>
 
       {/* Schedule Editor */}
-      <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-4 space-y-3">
+      <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#CA8A04]">
             Round Schedule & Timing
@@ -170,7 +170,7 @@ function RoundEditorCard({
               onClick={() =>
                 patchRound({ schedulePreset: "end_now" }, "Schedule set: Ended")
               }
-              className="rounded-[2px] border border-[#5C3D2E] bg-[#2C1A10] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors cursor-pointer"
+              className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors cursor-pointer"
             >
               End Round Now
             </button>
@@ -186,7 +186,7 @@ function RoundEditorCard({
               type="datetime-local"
               value={startLocal}
               onChange={(e) => setStartLocal(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
           <div>
@@ -197,7 +197,7 @@ function RoundEditorCard({
               type="datetime-local"
               value={endLocal}
               onChange={(e) => setEndLocal(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
           <div>
@@ -209,7 +209,7 @@ function RoundEditorCard({
               min={5}
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value) || 30)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
           <button
@@ -225,7 +225,7 @@ function RoundEditorCard({
                 "Round schedule saved."
               )
             }
-            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] hover:bg-[#B8780A] disabled:opacity-50 transition-colors duration-300 cursor-pointer"
+            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] disabled:opacity-50 transition-colors duration-300 cursor-pointer"
           >
             Save Schedule
           </button>
@@ -243,7 +243,7 @@ function RoundEditorCard({
             <select
               value={selectedAddQId}
               onChange={(e) => setSelectedAddQId(e.target.value)}
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] max-w-xs focus:border-[#CA8A04] focus:outline-none"
+              className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] max-w-xs focus:border-[#CA8A04] focus:outline-none"
             >
               <option value="">
                 {availableToAdd.length > 0
@@ -280,7 +280,7 @@ function RoundEditorCard({
                   ? onOpenNewMcq(round.id)
                   : onOpenNewCoding(round.id)
               }
-              className="rounded-[4px] border border-[#CA8A04]/60 bg-[#3D2517] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#5C3D2E]/50 transition-colors cursor-pointer"
+              className="rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors cursor-pointer"
             >
               + Create New {round.type === "mcq" ? "MCQ" : "DSL Coding"} Question
             </button>
@@ -288,11 +288,11 @@ function RoundEditorCard({
         </div>
 
         {assignedQuestions.length === 0 ? (
-          <div className="rounded-[4px] border border-dashed border-[#5C3D2E] p-4 text-center font-spectral text-xs text-[#BFA98A]">
+          <div className="rounded-[4px] border border-dashed border-[#462E22] p-4 text-center font-spectral text-xs text-[#BFA98A]">
             No questions in this round yet. Add one from the bank or create a new question above.
           </div>
         ) : (
-          <div className="divide-y divide-[#5C3D2E] rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A]">
+          <div className="divide-y divide-[#462E22] rounded-[4px] border border-[#462E22] bg-[#110A07]">
             {assignedQuestions.map((q, idx) => (
               <div
                 key={q.id}
@@ -305,7 +305,7 @@ function RoundEditorCard({
                   <span className="font-cinzel text-sm font-semibold text-[#F5E6D3]">
                     {q.title}
                   </span>
-                  <span className="rounded-[2px] border border-[#5C3D2E] bg-[#2C1A10] px-2 py-0.5 font-cinzel text-[10px] font-semibold uppercase text-[#BFA98A]">
+                  <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2 py-0.5 font-cinzel text-[10px] font-semibold uppercase text-[#BFA98A]">
                     {q.difficulty}
                   </span>
                   <span className="font-fira text-xs text-[#22C55E]">
@@ -499,7 +499,7 @@ function ModeratorContent() {
   if (!authLoading && currentUser?.role !== "moderator") {
     return (
       <main className="mx-auto max-w-xl p-12 text-center font-spectral text-[#F5E6D3]">
-        <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-8 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-8 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
           <h1 className="font-cinzel text-xl font-bold text-[#F5E6D3]">
             Moderator Access Required
           </h1>
@@ -509,13 +509,13 @@ function ModeratorContent() {
           <div className="pt-2 flex justify-center gap-3">
             <Link
               href="/login"
-              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A]"
+              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07]"
             >
               Sign In as Moderator
             </Link>
             <Link
               href="/"
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-4 py-2.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3]"
+              className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3]"
             >
               Back to Contests
             </Link>
@@ -541,14 +541,14 @@ function ModeratorContent() {
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/sandbox-status"
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300"
+            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300"
           >
             Sandbox Health
           </Link>
           <button
             type="button"
             onClick={() => setShowNewContest(true)}
-            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] transition-colors duration-300 cursor-pointer"
+            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] transition-colors duration-300 cursor-pointer"
           >
             + New Contest
           </button>
@@ -556,12 +556,12 @@ function ModeratorContent() {
       </div>
 
       {/* Contest Switcher, Join Code, Strict Mode Toggle & Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] px-4 py-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] px-4 py-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={activeContest?.id || ""}
             onChange={(e) => setSelectedContestId(e.target.value)}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-cinzel text-sm font-semibold text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+            className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-cinzel text-sm font-semibold text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
           >
             {contests.map((c) => (
               <option key={c.id} value={c.id}>
@@ -571,7 +571,7 @@ function ModeratorContent() {
           </select>
 
           {activeContest?.joinCode && (
-            <div className="flex items-center gap-2 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 text-xs">
+            <div className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 text-xs">
               <span className="font-cinzel text-[10px] uppercase tracking-[0.8px] text-[#BFA98A]">
                 Join Code:
               </span>
@@ -611,7 +611,7 @@ function ModeratorContent() {
               className={`inline-flex items-center gap-1.5 rounded-[4px] border px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 cursor-pointer ${
                 activeContest.strictMode
                   ? "border-[#581C87] bg-[#581C87]/35 text-[#F5E6D3] shadow-[0_0_12px_rgba(88,28,135,0.35)]"
-                  : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                  : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
               }`}
               title="Toggle Strict Mode (requires Fullscreen + blocks Tab Switching, max 7 warnings)"
             >
@@ -621,7 +621,7 @@ function ModeratorContent() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] p-1">
           {[
             { id: "rounds", label: "Rounds & Schedules" },
             { id: "dsl", label: "DSL Code Stubs Studio" },
@@ -633,7 +633,7 @@ function ModeratorContent() {
               onClick={() => setTab(item.id as "rounds" | "dsl" | "leaderboard")}
               className={`rounded-[2px] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
                 tab === item.id
-                  ? "bg-[#CA8A04] text-[#1A0F0A]"
+                  ? "bg-[#CA8A04] text-[#110A07]"
                   : "text-[#BFA98A] hover:text-[#F5E6D3]"
               }`}
             >
@@ -644,7 +644,7 @@ function ModeratorContent() {
       </div>
 
       {loading && contests.length === 0 ? (
-        <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-10 text-center font-spectral text-sm text-[#BFA98A]">
+        <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
           Loading Moderator Studio...
         </div>
       ) : tab === "rounds" ? (
@@ -662,14 +662,14 @@ function ModeratorContent() {
               <button
                 type="button"
                 onClick={() => setShowNewRound(true)}
-                className="rounded-[4px] border border-[#CA8A04]/70 bg-[#3D2517] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#5C3D2E]/50 transition-colors cursor-pointer"
+                className="rounded-[4px] border border-[#CA8A04]/70 bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors cursor-pointer"
               >
                 + Add Round (MCQ / Coding)
               </button>
             </div>
 
             {activeContest.rounds.length === 0 ? (
-              <div className="rounded-[4px] border border-dashed border-[#5C3D2E] p-10 text-center font-spectral text-sm text-[#BFA98A]">
+              <div className="rounded-[4px] border border-dashed border-[#462E22] p-10 text-center font-spectral text-sm text-[#BFA98A]">
                 No rounds in this contest yet. Click &ldquo;+ Add Round&rdquo; to create an MCQ or Coding round.
               </div>
             ) : (
@@ -719,8 +719,8 @@ function ModeratorContent() {
 
       {/* New Contest Modal */}
       {showNewContest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A0F0A]/85 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-[6px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
               Create New Contest
             </h3>
@@ -734,7 +734,7 @@ function ModeratorContent() {
                   value={newContestTitle}
                   onChange={(e) => setNewContestTitle(e.target.value)}
                   placeholder="e.g., Winter CodeFest 2026"
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
               <div>
@@ -745,7 +745,7 @@ function ModeratorContent() {
                   value={newContestJoinCode}
                   onChange={(e) => setNewContestJoinCode(e.target.value.toUpperCase())}
                   placeholder="e.g., WINTER-26"
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-fira text-sm uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
               <div>
@@ -757,10 +757,10 @@ function ModeratorContent() {
                   value={newContestDesc}
                   onChange={(e) => setNewContestDesc(e.target.value)}
                   placeholder="Describe rounds and rules..."
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
-              <label className="flex items-center gap-2 rounded-[4px] border border-[#581C87] bg-[#1A0F0A] p-3 text-xs text-[#F5E6D3] cursor-pointer">
+              <label className="flex items-center gap-2 rounded-[4px] border border-[#581C87] bg-[#110A07] p-3 text-xs text-[#F5E6D3] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={newContestStrict}
@@ -778,13 +778,13 @@ function ModeratorContent() {
                 <button
                   type="button"
                   onClick={() => setShowNewContest(false)}
-                  className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-4 py-2 font-cinzel text-xs text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
+                  className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2 font-cinzel text-xs text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase text-[#1A0F0A] hover:bg-[#B8780A] cursor-pointer"
+                  className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
                 >
                   Create Contest
                 </button>
@@ -796,8 +796,8 @@ function ModeratorContent() {
 
       {/* New Round Modal */}
       {showNewRound && activeContest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A0F0A]/85 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-[6px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
               Add Round to {activeContest.title}
             </h3>
@@ -809,7 +809,7 @@ function ModeratorContent() {
                 <select
                   value={newRoundType}
                   onChange={(e) => setNewRoundType(e.target.value as "mcq" | "coding")}
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 >
                   <option value="mcq">MCQ Round (Objective Questions)</option>
                   <option value="coding">Coding Round (C / C++ / Java / Python)</option>
@@ -824,7 +824,7 @@ function ModeratorContent() {
                   value={newRoundTitle}
                   onChange={(e) => setNewRoundTitle(e.target.value)}
                   placeholder="e.g., Round 3: Graph Algorithms"
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
               <div>
@@ -835,7 +835,7 @@ function ModeratorContent() {
                   rows={2}
                   value={newRoundDesc}
                   onChange={(e) => setNewRoundDesc(e.target.value)}
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
               <div>
@@ -847,20 +847,20 @@ function ModeratorContent() {
                   min={5}
                   value={newRoundDuration}
                   onChange={(e) => setNewRoundDuration(Number(e.target.value) || 60)}
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowNewRound(false)}
-                  className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-4 py-2 font-cinzel text-xs text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
+                  className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2 font-cinzel text-xs text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase text-[#1A0F0A] hover:bg-[#B8780A] cursor-pointer"
+                  className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
                 >
                   Add Round
                 </button>

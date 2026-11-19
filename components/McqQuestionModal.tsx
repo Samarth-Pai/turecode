@@ -70,9 +70,9 @@ export function McqQuestionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A0F0A]/85 p-4 backdrop-blur-md">
-      <div className="w-full max-w-2xl rounded-[6px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] shadow-[0_12px_40px_rgba(0,0,0,0.65)] overflow-hidden font-spectral text-[#F5E6D3]">
-        <div className="flex items-center justify-between border-b border-[#5C3D2E] px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
+      <div className="w-full max-w-2xl rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] shadow-[0_12px_40px_rgba(0,0,0,0.65)] overflow-hidden font-spectral text-[#F5E6D3]">
+        <div className="flex items-center justify-between border-b border-[#462E22] px-6 py-4">
           <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
             Create New MCQ Question
           </h3>
@@ -96,7 +96,7 @@ export function McqQuestionModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., Dijkstra Complexity"
-                className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
               />
             </div>
             <div>
@@ -108,7 +108,7 @@ export function McqQuestionModal({
                 min={1}
                 value={points}
                 onChange={(e) => setPoints(Number(e.target.value) || 25)}
-                className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
               />
             </div>
             <div>
@@ -120,7 +120,7 @@ export function McqQuestionModal({
                 min={0}
                 value={negativePoints}
                 onChange={(e) => setNegativePoints(Number(e.target.value) || 0)}
-                className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
               />
             </div>
           </div>
@@ -135,7 +135,7 @@ export function McqQuestionModal({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Write the multiple-choice question prompt..."
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
 
@@ -164,7 +164,7 @@ export function McqQuestionModal({
                     setOptions(next);
                   }}
                   placeholder={`Option ${opt.id.toUpperCase()}`}
-                  className="flex-1 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="flex-1 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
             ))}
@@ -178,7 +178,7 @@ export function McqQuestionModal({
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as "Easy" | "Medium" | "Hard")}
-                className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
               >
                 <option value="Easy">Easy</option>
                 <option value="Medium">Medium</option>
@@ -193,7 +193,7 @@ export function McqQuestionModal({
                 value={explanation}
                 onChange={(e) => setExplanation(e.target.value)}
                 placeholder="Moderator reference note"
-                className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
               />
             </div>
           </div>
@@ -208,14 +208,14 @@ export function McqQuestionModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
+              className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] hover:bg-[#B8780A] disabled:opacity-50 transition-colors duration-300 cursor-pointer"
+              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] disabled:opacity-50 transition-colors duration-300 cursor-pointer"
             >
               {saving ? "Saving..." : "Create MCQ Question"}
             </button>

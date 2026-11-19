@@ -58,7 +58,7 @@ function LoginContent() {
     <main className="flex-1 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6 transition-opacity duration-300">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[4px] border border-[#DAA520] bg-[#CA8A04] text-[#1A0F0A] shadow-[0_0_20px_rgba(202,138,4,0.4)]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[4px] border border-[#DAA520] bg-[#CA8A04] text-[#110A07] shadow-[0_0_20px_rgba(202,138,4,0.4)]">
             <Code2 className="h-6 w-6" />
           </div>
           <h1 className="font-cinzel text-2xl font-bold tracking-wide text-[#F5E6D3]">
@@ -71,8 +71,8 @@ function LoginContent() {
           </p>
         </div>
 
-        <div className="rounded-[6px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] shadow-[0_8px_32px_rgba(202,138,4,0.25)] overflow-hidden">
-          <div className="grid grid-cols-2 border-b border-[#5C3D2E] bg-[#1A0F0A] p-1.5 gap-1.5">
+        <div className="rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] shadow-[0_8px_32px_rgba(202,138,4,0.25)] overflow-hidden">
+          <div className="grid grid-cols-2 border-b border-[#462E22] bg-[#110A07] p-1.5 gap-1.5">
             <button
               type="button"
               onClick={() => {
@@ -81,8 +81,8 @@ function LoginContent() {
               }}
               className={`rounded-[4px] py-2 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
                 mode === "login"
-                  ? "bg-[#CA8A04] text-[#1A0F0A] shadow-[0_1px_3px_rgba(202,138,4,0.2)]"
-                  : "text-[#BFA98A] hover:bg-[#3D2517] hover:text-[#F5E6D3]"
+                  ? "bg-[#CA8A04] text-[#110A07] shadow-[0_1px_3px_rgba(202,138,4,0.2)]"
+                  : "text-[#BFA98A] hover:bg-[#2A1810] hover:text-[#F5E6D3]"
               }`}
             >
               Sign In
@@ -95,8 +95,8 @@ function LoginContent() {
               }}
               className={`rounded-[4px] py-2 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
                 mode === "register"
-                  ? "bg-[#CA8A04] text-[#1A0F0A] shadow-[0_1px_3px_rgba(202,138,4,0.2)]"
-                  : "text-[#BFA98A] hover:bg-[#3D2517] hover:text-[#F5E6D3]"
+                  ? "bg-[#CA8A04] text-[#110A07] shadow-[0_1px_3px_rgba(202,138,4,0.2)]"
+                  : "text-[#BFA98A] hover:bg-[#2A1810] hover:text-[#F5E6D3]"
               }`}
             >
               Create Account
@@ -114,7 +114,7 @@ function LoginContent() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full h-10 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-spectral text-sm text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
+                  className="w-full h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-spectral text-sm text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
                 />
               </div>
             )}
@@ -129,7 +129,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full h-10 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-spectral text-sm text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
+                className="w-full h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-spectral text-sm text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
               />
             </div>
 
@@ -143,7 +143,7 @@ function LoginContent() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-10 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-spectral text-sm text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
+                className="w-full h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-spectral text-sm text-[#F5E6D3] placeholder:text-[#BFA98A]/50 hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:ring-[3px] focus:ring-[#CA8A04]/25 focus:outline-none"
               />
             </div>
 
@@ -155,7 +155,7 @@ function LoginContent() {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full h-10 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-spectral text-sm text-[#F5E6D3] hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-spectral text-sm text-[#F5E6D3] hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:outline-none"
                 >
                   <option value="participant">Contest Participant</option>
                   <option value="moderator">Contest Moderator / Organizer</option>
@@ -172,7 +172,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full h-10 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-300 cursor-pointer"
+              className="w-full h-10 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-300 cursor-pointer"
             >
               {busy
                 ? "Authenticating..."
@@ -182,7 +182,7 @@ function LoginContent() {
             </button>
           </form>
 
-          <div className="border-t border-[#5C3D2E] bg-[#1A0F0A]/70 px-6 py-4 space-y-2.5">
+          <div className="border-t border-[#462E22] bg-[#110A07]/70 px-6 py-4 space-y-2.5">
             <div className="flex items-center gap-1.5 font-cinzel text-[11px] font-semibold uppercase tracking-[1px] text-[#BFA98A]">
               <Sparkles className="h-3.5 w-3.5 text-[#CA8A04]" />
               Quick Demo Access
@@ -192,7 +192,7 @@ function LoginContent() {
                 type="button"
                 disabled={busy}
                 onClick={() => quickLogin("samarth@turecode.dev")}
-                className="flex items-center justify-between rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-3 py-2 text-left text-xs hover:border-[#CA8A04] hover:bg-[#3D2517] transition-all duration-300 cursor-pointer"
+                className="flex items-center justify-between rounded-[4px] border border-[#462E22] bg-[#1D110B] px-3 py-2 text-left text-xs hover:border-[#CA8A04] hover:bg-[#2A1810] transition-all duration-300 cursor-pointer"
               >
                 <span className="font-spectral text-[#BFA98A]">
                   <strong className="text-[#F5E6D3]">Samarth Pai</strong>{" "}
@@ -208,7 +208,7 @@ function LoginContent() {
                 type="button"
                 disabled={busy}
                 onClick={() => quickLogin("priya@turecode.dev")}
-                className="flex items-center justify-between rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-3 py-2 text-left text-xs hover:border-[#CA8A04] hover:bg-[#3D2517] transition-all duration-300 cursor-pointer"
+                className="flex items-center justify-between rounded-[4px] border border-[#462E22] bg-[#1D110B] px-3 py-2 text-left text-xs hover:border-[#CA8A04] hover:bg-[#2A1810] transition-all duration-300 cursor-pointer"
               >
                 <span className="font-spectral text-[#BFA98A]">
                   <strong className="text-[#F5E6D3]">Priya Patel</strong>{" "}

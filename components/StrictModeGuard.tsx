@@ -144,7 +144,7 @@ export function StrictModeGuard({
   if (violations > MAX_VIOLATIONS) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="max-w-md w-full rounded-[6px] border border-[#B91C1C] border-t-2 border-t-[#991B1B] bg-[#2C1A10] p-8 text-center space-y-4 shadow-[0_8px_32px_rgba(202,138,4,0.25)]">
+        <div className="max-w-md w-full rounded-[6px] border border-[#B91C1C] border-t-2 border-t-[#991B1B] bg-[#1D110B] p-8 text-center space-y-4 shadow-[0_8px_32px_rgba(202,138,4,0.25)]">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[4px] border border-[#B91C1C] bg-[#991B1B]/25 text-[#F87171]">
             <Lock className="h-7 w-7" />
           </div>
@@ -172,7 +172,7 @@ export function StrictModeGuard({
   if (!started || !isFullscreen) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="max-w-lg w-full rounded-[6px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-8 space-y-5 shadow-[0_8px_32px_rgba(202,138,4,0.25)]">
+        <div className="max-w-lg w-full rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-8 space-y-5 shadow-[0_8px_32px_rgba(202,138,4,0.25)]">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-[4px] border border-[#581C87] bg-[#581C87]/35 text-[#E9D5FF]">
               <ShieldAlert className="h-6 w-6" />
@@ -187,7 +187,7 @@ export function StrictModeGuard({
             </div>
           </div>
 
-          <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-4 space-y-2 font-spectral text-sm text-[#BFA98A]">
+          <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-2 font-spectral text-sm text-[#BFA98A]">
             <p>• You must remain in <strong className="text-[#F5E6D3]">Fullscreen Mode</strong> for the entire round.</p>
             <p>• Switching browser tabs, minimizing, or leaving the window triggers a violation warning.</p>
             <p>
@@ -204,7 +204,7 @@ export function StrictModeGuard({
           <button
             type="button"
             onClick={enterFullscreen}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] py-3 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] py-3 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300 cursor-pointer"
           >
             <Maximize2 className="h-4 w-4" />
             {started ? "Return to Fullscreen & Continue" : "Enter Fullscreen & Start Round"}
@@ -216,7 +216,7 @@ export function StrictModeGuard({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-[#5C3D2E] bg-[#3D2517] px-4 py-1.5 flex items-center justify-between text-xs">
+      <div className="border-b border-[#462E22] bg-[#2A1810] px-4 py-1.5 flex items-center justify-between text-xs">
         <span className="inline-flex items-center gap-2 font-spectral text-[#F5E6D3]">
           <ShieldAlert className="h-3.5 w-3.5 text-[#CA8A04]" />
           Strict Proctoring Active — Stay in Fullscreen & Do Not Switch Tabs
@@ -237,8 +237,8 @@ export function StrictModeGuard({
       {children}
 
       {warningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A0F0A]/85 p-4">
-          <div className="max-w-md w-full rounded-[6px] border border-[#CA8A04] border-t-2 border-t-[#991B1B] bg-[#2C1A10] p-6 text-center space-y-4 shadow-[0_8px_32px_rgba(202,138,4,0.3)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4">
+          <div className="max-w-md w-full rounded-[6px] border border-[#CA8A04] border-t-2 border-t-[#991B1B] bg-[#1D110B] p-6 text-center space-y-4 shadow-[0_8px_32px_rgba(202,138,4,0.3)]">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[4px] border border-[#CA8A04] bg-[#CA8A04]/20 text-[#CA8A04]">
               <AlertTriangle className="h-6 w-6" />
             </div>
@@ -255,7 +255,7 @@ export function StrictModeGuard({
             <button
               type="button"
               onClick={enterFullscreen}
-              className="w-full rounded-[4px] border border-[#DAA520] bg-[#CA8A04] py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] hover:bg-[#B8780A] cursor-pointer"
+              className="w-full rounded-[4px] border border-[#DAA520] bg-[#CA8A04] py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
             >
               Acknowledge & Return to Fullscreen
             </button>

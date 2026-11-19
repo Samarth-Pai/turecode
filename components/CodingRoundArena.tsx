@@ -336,16 +336,16 @@ export function CodingRoundArena({
 
   return (
     <div
-      className={`flex min-h-0 flex-1 flex-col bg-[#1A0F0A] text-[#F5E6D3] font-spectral ${
+      className={`flex min-h-0 flex-1 flex-col bg-[#110A07] text-[#F5E6D3] font-spectral ${
         isFullscreen ? "fixed inset-0 z-50" : "h-full"
       }`}
     >
       {/* Top Assessment & Layout Bar */}
-      <div className="border-b border-[#5C3D2E] bg-[#2C1A10] px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+      <div className="border-b border-[#462E22] bg-[#1D110B] px-4 py-2 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href={`/contests/${contestId}`}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300"
+            className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300"
           >
             ← {contestTitle}
           </Link>
@@ -366,8 +366,8 @@ export function CodingRoundArena({
                 }}
                 className={`rounded-[4px] border px-3 py-1.5 font-cinzel text-xs font-semibold transition-all duration-300 cursor-pointer ${
                   idx === activeQIndex
-                    ? "border-[#DAA520] bg-[#3D2517] text-[#F5E6D3] shadow-[0_0_12px_rgba(202,138,4,0.2)]"
-                    : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                    ? "border-[#DAA520] bg-[#2A1810] text-[#F5E6D3] shadow-[0_0_12px_rgba(202,138,4,0.2)]"
+                    : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
                 }`}
               >
                 {idx + 1}. {q.title}
@@ -386,8 +386,8 @@ export function CodingRoundArena({
             }}
             className={`hidden lg:inline-block rounded-[4px] border px-2.5 py-1 font-cinzel text-[11px] font-medium cursor-pointer transition-colors duration-300 ${
               !problemCollapsed && Math.abs(leftWidthPct - 42) < 5
-                ? "border-[#CA8A04] bg-[#3D2517] text-[#CA8A04]"
-                : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                ? "border-[#CA8A04] bg-[#2A1810] text-[#CA8A04]"
+                : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
             }`}
           >
             Split
@@ -400,8 +400,8 @@ export function CodingRoundArena({
             }}
             className={`hidden lg:inline-block rounded-[4px] border px-2.5 py-1 font-cinzel text-[11px] font-medium cursor-pointer transition-colors duration-300 ${
               !problemCollapsed && leftWidthPct <= 28
-                ? "border-[#CA8A04] bg-[#3D2517] text-[#CA8A04]"
-                : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                ? "border-[#CA8A04] bg-[#2A1810] text-[#CA8A04]"
+                : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
             }`}
           >
             Wide Code
@@ -411,8 +411,8 @@ export function CodingRoundArena({
             onClick={() => setProblemCollapsed((v) => !v)}
             className={`rounded-[4px] border px-2.5 py-1 font-cinzel text-[11px] font-medium cursor-pointer transition-colors duration-300 ${
               problemCollapsed
-                ? "border-[#CA8A04] bg-[#3D2517] text-[#CA8A04]"
-                : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                ? "border-[#CA8A04] bg-[#2A1810] text-[#CA8A04]"
+                : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
             }`}
           >
             {problemCollapsed ? "Show Problem" : "Hide Problem"}
@@ -421,18 +421,18 @@ export function CodingRoundArena({
             type="button"
             onClick={() => setIsFullscreen((v) => !v)}
             aria-label="Toggle Fullscreen Workspace"
-            className="inline-flex items-center gap-1 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-2.5 py-1 text-[11px] font-medium text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 text-[11px] font-medium text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </button>
 
-          <span className="mx-1 hidden h-5 w-px bg-[#5C3D2E] sm:inline-block" />
+          <span className="mx-1 hidden h-5 w-px bg-[#462E22] sm:inline-block" />
 
           <button
             type="button"
             disabled={running !== null}
             onClick={() => executeCode("run")}
-            className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#CA8A04]/70 bg-[#3D2517] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#DAA520] hover:bg-[#5C3D2E]/50 disabled:opacity-50 transition-all duration-300 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#CA8A04]/70 bg-[#2A1810] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#DAA520] hover:bg-[#462E22]/50 disabled:opacity-50 transition-all duration-300 cursor-pointer"
           >
             <Play className="h-3.5 w-3.5 text-[#CA8A04]" />
             {running === "run" ? "Running..." : "Run"}
@@ -441,7 +441,7 @@ export function CodingRoundArena({
             type="button"
             disabled={running !== null || !canSubmit}
             onClick={() => executeCode("submit")}
-            className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
           >
             <Send className="h-3.5 w-3.5" />
             {running === "submit" ? "Submitting..." : "Submit"}
@@ -458,15 +458,15 @@ export function CodingRoundArena({
         {!problemCollapsed && (
           <div
             style={{ "--left-w": `${leftWidthPct}%` } as React.CSSProperties}
-            className="w-full lg:w-[var(--left-w)] lg:shrink-0 flex flex-col border-b lg:border-b-0 border-[#5C3D2E] bg-[#2C1A10] min-h-[300px] lg:min-h-0 overflow-hidden"
+            className="w-full lg:w-[var(--left-w)] lg:shrink-0 flex flex-col border-b lg:border-b-0 border-[#462E22] bg-[#1D110B] min-h-[300px] lg:min-h-0 overflow-hidden"
           >
-            <div className="flex items-center gap-2 border-b border-[#5C3D2E] bg-[#1A0F0A] px-4 py-2">
+            <div className="flex items-center gap-2 border-b border-[#462E22] bg-[#110A07] px-4 py-2">
               <button
                 type="button"
                 onClick={() => setLeftTab("problem")}
                 className={`rounded-[4px] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
                   leftTab === "problem"
-                    ? "border border-[#CA8A04]/50 bg-[#3D2517] text-[#F5E6D3]"
+                    ? "border border-[#CA8A04]/50 bg-[#2A1810] text-[#F5E6D3]"
                     : "text-[#BFA98A] hover:text-[#F5E6D3]"
                 }`}
               >
@@ -477,7 +477,7 @@ export function CodingRoundArena({
                 onClick={() => setLeftTab("submissions")}
                 className={`rounded-[4px] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
                   leftTab === "submissions"
-                    ? "border border-[#CA8A04]/50 bg-[#3D2517] text-[#F5E6D3]"
+                    ? "border border-[#CA8A04]/50 bg-[#2A1810] text-[#F5E6D3]"
                     : "text-[#BFA98A] hover:text-[#F5E6D3]"
                 }`}
               >
@@ -515,7 +515,7 @@ export function CodingRoundArena({
                       {activeQ.tags.map((t) => (
                         <span
                           key={t}
-                          className="rounded-[2px] border border-[#5C3D2E] bg-[#1A0F0A] px-2 py-0.5 font-cinzel text-[10px] uppercase tracking-[0.8px] text-[#BFA98A]"
+                          className="rounded-[2px] border border-[#462E22] bg-[#110A07] px-2 py-0.5 font-cinzel text-[10px] uppercase tracking-[0.8px] text-[#BFA98A]"
                         >
                           {t}
                         </span>
@@ -527,7 +527,7 @@ export function CodingRoundArena({
                     {activeQ.description}
                   </div>
 
-                  <div className="space-y-3 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-4 text-xs">
+                  <div className="space-y-3 rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 text-xs">
                     <div>
                       <div className="font-cinzel font-bold uppercase tracking-[1px] text-[#CA8A04] mb-1">
                         Input Format
@@ -536,7 +536,7 @@ export function CodingRoundArena({
                         {activeQ.inputFormat}
                       </p>
                     </div>
-                    <div className="border-t border-[#5C3D2E] pt-3">
+                    <div className="border-t border-[#462E22] pt-3">
                       <div className="font-cinzel font-bold uppercase tracking-[1px] text-[#CA8A04] mb-1">
                         Constraints
                       </div>
@@ -544,7 +544,7 @@ export function CodingRoundArena({
                         {activeQ.constraints}
                       </pre>
                     </div>
-                    <div className="border-t border-[#5C3D2E] pt-3">
+                    <div className="border-t border-[#462E22] pt-3">
                       <div className="font-cinzel font-bold uppercase tracking-[1px] text-[#CA8A04] mb-1">
                         Output Format
                       </div>
@@ -561,14 +561,14 @@ export function CodingRoundArena({
                     {sampleCases.map((tc, idx) => (
                       <div
                         key={tc.id}
-                        className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3.5 space-y-3"
+                        className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3.5 space-y-3"
                       >
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
                             <div className="font-cinzel text-[10px] font-bold uppercase tracking-[1px] text-[#BFA98A] mb-1">
                               Sample Input {idx + 1}
                             </div>
-                            <pre className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2.5 font-fira text-xs text-[#F5E6D3] overflow-x-auto">
+                            <pre className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2.5 font-fira text-xs text-[#F5E6D3] overflow-x-auto">
                               {tc.input.trimEnd()}
                             </pre>
                           </div>
@@ -576,13 +576,13 @@ export function CodingRoundArena({
                             <div className="font-cinzel text-[10px] font-bold uppercase tracking-[1px] text-[#BFA98A] mb-1">
                               Sample Output {idx + 1}
                             </div>
-                            <pre className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2.5 font-fira text-xs text-[#22C55E] overflow-x-auto">
+                            <pre className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2.5 font-fira text-xs text-[#22C55E] overflow-x-auto">
                               {tc.expectedOutput.trimEnd()}
                             </pre>
                           </div>
                         </div>
                         {tc.explanation && (
-                          <div className="rounded-[4px] border border-[#581C87] bg-[#581C87]/20 px-3 py-2 font-spectral text-xs text-[#F5E6D3] leading-relaxed">
+                          <div className="rounded-[4px] border border-[#462E22] border-l-2 border-l-[#CA8A04] bg-[#160C08] px-3 py-2 font-spectral text-xs text-[#F5E6D3] leading-relaxed">
                             <strong className="font-cinzel text-[11px] uppercase tracking-[0.5px] text-[#CA8A04]">
                               Explanation:
                             </strong>{" "}
@@ -603,7 +603,7 @@ export function CodingRoundArena({
                     submissions.map((sub) => (
                       <div
                         key={sub.id}
-                        className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-4 space-y-2"
+                        className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-2"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
@@ -616,7 +616,7 @@ export function CodingRoundArena({
                             >
                               {sub.status}
                             </span>
-                            <span className="rounded-[2px] border border-[#5C3D2E] bg-[#2C1A10] px-2 py-0.5 font-fira text-[11px] uppercase text-[#CA8A04]">
+                            <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2 py-0.5 font-fira text-[11px] uppercase text-[#CA8A04]">
                               {sub.language}
                             </span>
                           </div>
@@ -657,7 +657,7 @@ export function CodingRoundArena({
           <div
             onMouseDown={startHorizontalDrag}
             title="Drag to resize problem & editor"
-            className="hidden lg:flex w-1.5 shrink-0 cursor-col-resize items-center justify-center bg-[#5C3D2E]/60 hover:bg-[#CA8A04] transition-colors duration-300"
+            className="hidden lg:flex w-1.5 shrink-0 cursor-col-resize items-center justify-center bg-[#462E22]/60 hover:bg-[#CA8A04] transition-colors duration-300"
           >
             <div className="h-8 w-0.5 rounded-full bg-[#BFA98A]/60" />
           </div>
@@ -666,16 +666,16 @@ export function CodingRoundArena({
         {/* Right CodeMirror 6 IDE & Console Drawer */}
         <div
           ref={rightPaneRef}
-          className="flex flex-1 flex-col min-w-0 min-h-[500px] lg:min-h-0 overflow-hidden bg-[#1A0F0A]"
+          className="flex flex-1 flex-col min-w-0 min-h-[500px] lg:min-h-0 overflow-hidden bg-[#110A07]"
         >
           {/* Editor Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#5C3D2E] bg-[#2C1A10] px-4 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#462E22] bg-[#1D110B] px-4 py-2">
             <div className="flex flex-wrap items-center gap-2">
               <select
                 aria-label="Select Language"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as LanguageId)}
-                className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-fira text-xs font-semibold text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none cursor-pointer"
+                className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-fira text-xs font-semibold text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none cursor-pointer"
               >
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <option key={lang.id} value={lang.id}>
@@ -684,7 +684,7 @@ export function CodingRoundArena({
                 ))}
               </select>
 
-              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-[2px] border border-[#5C3D2E] bg-[#1A0F0A] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase tracking-[0.8px] text-[#CA8A04]">
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-[2px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase tracking-[0.8px] text-[#CA8A04]">
                 <Sparkles className="h-3 w-3" />
                 Syntax & Autocomplete
               </span>
@@ -695,7 +695,7 @@ export function CodingRoundArena({
                 aria-label="Font Size"
                 value={fontSize}
                 onChange={(e) => setFontSize(Number(e.target.value))}
-                className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-2 py-1 font-fira text-[11px] text-[#F5E6D3] cursor-pointer"
+                className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-2 py-1 font-fira text-[11px] text-[#F5E6D3] cursor-pointer"
               >
                 <option value={12}>12px</option>
                 <option value={14}>14px</option>
@@ -708,8 +708,8 @@ export function CodingRoundArena({
                 onClick={() => setWordWrap((v) => !v)}
                 className={`rounded-[4px] border px-2.5 py-1 font-cinzel text-[11px] font-medium cursor-pointer transition-colors duration-300 ${
                   wordWrap
-                    ? "border-[#CA8A04] bg-[#3D2517] text-[#CA8A04]"
-                    : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                    ? "border-[#CA8A04] bg-[#2A1810] text-[#CA8A04]"
+                    : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
                 }`}
               >
                 Wrap
@@ -720,7 +720,7 @@ export function CodingRoundArena({
                 onClick={() =>
                   setEditorTheme((t) => (t === "dark" ? "light" : "dark"))
                 }
-                className="inline-flex items-center gap-1 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-2.5 py-1 font-cinzel text-[11px] font-medium text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
+                className="inline-flex items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[11px] font-medium text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
               >
                 {editorTheme === "dark" ? (
                   <>
@@ -737,7 +737,7 @@ export function CodingRoundArena({
                 <button
                   type="button"
                   onClick={handleLoadSampleSolution}
-                  className="rounded-[4px] border border-[#581C87] bg-[#581C87]/25 px-2.5 py-1 font-cinzel text-[11px] font-semibold text-[#F5E6D3] hover:bg-[#581C87]/40 transition-colors duration-300 cursor-pointer"
+                  className="rounded-[4px] border border-[#CA8A04]/50 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[11px] font-semibold text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors duration-300 cursor-pointer"
                 >
                   Load Sample
                 </button>
@@ -746,7 +746,7 @@ export function CodingRoundArena({
               <button
                 type="button"
                 onClick={handleResetStub}
-                className="inline-flex items-center gap-1 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-2.5 py-1 font-cinzel text-[11px] font-medium text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
+                className="inline-flex items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[11px] font-medium text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3] transition-colors duration-300 cursor-pointer"
               >
                 <RotateCcw className="h-3 w-3" />
                 Reset
@@ -756,7 +756,7 @@ export function CodingRoundArena({
 
           {/* Collapsible DSL Head */}
           {activeQ.useDslStubs && stub.head && (
-            <div className="border-b border-[#5C3D2E] bg-[#2C1A10]">
+            <div className="border-b border-[#462E22] bg-[#1D110B]">
               <button
                 type="button"
                 onClick={() => setShowHead((v) => !v)}
@@ -770,7 +770,7 @@ export function CodingRoundArena({
                 </span>
               </button>
               {showHead && (
-                <pre className="border-t border-[#5C3D2E] bg-[#1A0F0A] px-4 py-2 font-fira text-xs text-[#BFA98A] overflow-x-auto">
+                <pre className="border-t border-[#462E22] bg-[#110A07] px-4 py-2 font-fira text-xs text-[#BFA98A] overflow-x-auto">
                   {stub.head}
                 </pre>
               )}
@@ -795,7 +795,7 @@ export function CodingRoundArena({
 
           {/* Collapsible DSL Tail */}
           {activeQ.useDslStubs && stub.tail && (
-            <div className="border-t border-[#5C3D2E] bg-[#2C1A10]">
+            <div className="border-t border-[#462E22] bg-[#1D110B]">
               <button
                 type="button"
                 onClick={() => setShowTail((v) => !v)}
@@ -809,7 +809,7 @@ export function CodingRoundArena({
                 </span>
               </button>
               {showTail && (
-                <pre className="max-h-48 overflow-auto border-t border-[#5C3D2E] bg-[#1A0F0A] px-4 py-2 font-fira text-xs text-[#BFA98A]">
+                <pre className="max-h-48 overflow-auto border-t border-[#462E22] bg-[#110A07] px-4 py-2 font-fira text-xs text-[#BFA98A]">
                   {stub.tail}
                 </pre>
               )}
@@ -820,7 +820,7 @@ export function CodingRoundArena({
           <div
             onMouseDown={startVerticalDrag}
             title="Drag to resize console drawer"
-            className="h-1.5 shrink-0 cursor-row-resize bg-[#5C3D2E]/60 hover:bg-[#CA8A04] transition-colors duration-300 flex items-center justify-center"
+            className="h-1.5 shrink-0 cursor-row-resize bg-[#462E22]/60 hover:bg-[#CA8A04] transition-colors duration-300 flex items-center justify-center"
           >
             <div className="w-10 h-0.5 rounded-full bg-[#BFA98A]/60" />
           </div>
@@ -829,16 +829,16 @@ export function CodingRoundArena({
           {!consoleCollapsed && (
             <div
               style={{ height: `${consoleHeightPx}px` }}
-              className="flex shrink-0 flex-col bg-[#2C1A10] overflow-hidden"
+              className="flex shrink-0 flex-col bg-[#1D110B] overflow-hidden"
             >
-              <div className="flex items-center justify-between border-b border-[#5C3D2E] bg-[#1A0F0A] px-4 py-1.5">
+              <div className="flex items-center justify-between border-b border-[#462E22] bg-[#110A07] px-4 py-1.5">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setDrawerTab("testcase")}
                     className={`rounded-[4px] px-3 py-1 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
                       drawerTab === "testcase"
-                        ? "border border-[#CA8A04]/50 bg-[#3D2517] text-[#F5E6D3]"
+                        ? "border border-[#CA8A04]/50 bg-[#2A1810] text-[#F5E6D3]"
                         : "text-[#BFA98A] hover:text-[#F5E6D3]"
                     }`}
                   >
@@ -849,7 +849,7 @@ export function CodingRoundArena({
                     onClick={() => setDrawerTab("result")}
                     className={`rounded-[4px] px-3 py-1 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer flex items-center gap-2 ${
                       drawerTab === "result"
-                        ? "border border-[#CA8A04]/50 bg-[#3D2517] text-[#F5E6D3]"
+                        ? "border border-[#CA8A04]/50 bg-[#2A1810] text-[#F5E6D3]"
                         : "text-[#BFA98A] hover:text-[#F5E6D3]"
                     }`}
                   >
@@ -894,8 +894,8 @@ export function CodingRoundArena({
                             }}
                             className={`rounded-[2px] border px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] cursor-pointer transition-colors duration-300 ${
                               !useCustomInput && selectedSampleIdx === idx
-                                ? "border-[#CA8A04] bg-[#3D2517] text-[#CA8A04]"
-                                : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                                ? "border-[#CA8A04] bg-[#2A1810] text-[#CA8A04]"
+                                : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
                             }`}
                           >
                             Sample {idx + 1}
@@ -906,8 +906,8 @@ export function CodingRoundArena({
                           onClick={() => setUseCustomInput(true)}
                           className={`rounded-[2px] border px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] cursor-pointer transition-colors duration-300 ${
                             useCustomInput
-                              ? "border-[#CA8A04] bg-[#3D2517] text-[#CA8A04]"
-                              : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                              ? "border-[#CA8A04] bg-[#2A1810] text-[#CA8A04]"
+                              : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
                           }`}
                         >
                           Custom Input
@@ -924,7 +924,7 @@ export function CodingRoundArena({
                         value={customInput}
                         onChange={(e) => setCustomInput(e.target.value)}
                         placeholder="Enter STDIN input..."
-                        className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                        className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] p-3 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                       />
                     ) : sampleCases[selectedSampleIdx] ? (
                       <div className="grid gap-3 sm:grid-cols-2">
@@ -932,7 +932,7 @@ export function CodingRoundArena({
                           <div className="font-cinzel text-[10px] font-bold uppercase tracking-[1px] text-[#BFA98A] mb-1">
                             Input
                           </div>
-                          <pre className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-2.5 font-fira text-xs text-[#F5E6D3] overflow-x-auto">
+                          <pre className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-2.5 font-fira text-xs text-[#F5E6D3] overflow-x-auto">
                             {sampleCases[selectedSampleIdx].input.trimEnd()}
                           </pre>
                         </div>
@@ -940,7 +940,7 @@ export function CodingRoundArena({
                           <div className="font-cinzel text-[10px] font-bold uppercase tracking-[1px] text-[#BFA98A] mb-1">
                             Expected Output
                           </div>
-                          <pre className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-2.5 font-fira text-xs text-[#22C55E] overflow-x-auto">
+                          <pre className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-2.5 font-fira text-xs text-[#22C55E] overflow-x-auto">
                             {sampleCases[selectedSampleIdx].expectedOutput.trimEnd()}
                           </pre>
                         </div>
@@ -999,7 +999,7 @@ export function CodingRoundArena({
                     )}
 
                     {consoleRes.kind === "custom" && (
-                      <pre className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3 font-fira text-xs text-[#22C55E] whitespace-pre-wrap">
+                      <pre className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3 font-fira text-xs text-[#22C55E] whitespace-pre-wrap">
                         {consoleRes.output || "(empty output)"}
                       </pre>
                     )}
@@ -1027,13 +1027,13 @@ export function CodingRoundArena({
                           </div>
 
                           {activeResultCase && (
-                            <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3 text-xs space-y-2">
+                            <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3 text-xs space-y-2">
                               <div className="grid gap-2 sm:grid-cols-3 font-fira text-[11px]">
                                 <div>
                                   <span className="font-cinzel text-[10px] uppercase text-[#BFA98A]">
                                     Input:
                                   </span>
-                                  <pre className="mt-1 rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 text-[#F5E6D3] overflow-x-auto">
+                                  <pre className="mt-1 rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 text-[#F5E6D3] overflow-x-auto">
                                     {activeResultCase.input?.trimEnd()}
                                   </pre>
                                 </div>
@@ -1041,7 +1041,7 @@ export function CodingRoundArena({
                                   <span className="font-cinzel text-[10px] uppercase text-[#BFA98A]">
                                     Expected:
                                   </span>
-                                  <pre className="mt-1 rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 text-[#22C55E] overflow-x-auto">
+                                  <pre className="mt-1 rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 text-[#22C55E] overflow-x-auto">
                                     {activeResultCase.expectedOutput?.trimEnd()}
                                   </pre>
                                 </div>
@@ -1049,7 +1049,7 @@ export function CodingRoundArena({
                                   <span className="font-cinzel text-[10px] uppercase text-[#BFA98A]">
                                     Your Output:
                                   </span>
-                                  <pre className="mt-1 rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 text-[#F5E6D3] overflow-x-auto">
+                                  <pre className="mt-1 rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 text-[#F5E6D3] overflow-x-auto">
                                     {activeResultCase.actualOutput?.trimEnd() || "(empty)"}
                                   </pre>
                                 </div>
@@ -1066,7 +1066,7 @@ export function CodingRoundArena({
 
           {/* Console expand bar when collapsed */}
           {consoleCollapsed && (
-            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#5C3D2E] bg-[#2C1A10] px-4 py-1.5">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[#462E22] bg-[#1D110B] px-4 py-1.5">
               <button
                 type="button"
                 onClick={() => setConsoleCollapsed(false)}

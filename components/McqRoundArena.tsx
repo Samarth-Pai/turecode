@@ -119,7 +119,7 @@ export function McqRoundArena({
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 space-y-5 font-spectral text-[#F5E6D3]">
       {/* Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] px-5 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] px-5 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
         <div>
           <div className="flex items-center gap-2 font-cinzel text-xs uppercase tracking-[1px] text-[#BFA98A]">
             <Link
@@ -128,7 +128,7 @@ export function McqRoundArena({
             >
               {contestTitle}
             </Link>
-            <span className="text-[#5C3D2E]">/</span>
+            <span className="text-[#462E22]">/</span>
             <span className="text-[#CA8A04] font-semibold">MCQ Trial</span>
           </div>
           <h1 className="font-cinzel text-xl font-bold text-[#F5E6D3] mt-0.5 tracking-wide">
@@ -137,7 +137,7 @@ export function McqRoundArena({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3.5 py-2 font-fira text-xs text-[#BFA98A]">
+          <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3.5 py-2 font-fira text-xs text-[#BFA98A]">
             Answered:{" "}
             <strong className="text-[#CA8A04]">{answeredCount}</strong> /{" "}
             <span className="text-[#F5E6D3]">{questions.length}</span>
@@ -147,7 +147,7 @@ export function McqRoundArena({
             type="button"
             disabled={submitting || !canSubmit}
             onClick={handleSubmitAll}
-            className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
           >
             <Send className="h-3.5 w-3.5" />
             {submitting ? "Submitting..." : "Submit Assessment"}
@@ -178,7 +178,7 @@ export function McqRoundArena({
           </div>
           <Link
             href={`/contests/${contestId}`}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#F5E6D3] hover:border-[#CA8A04] transition-all duration-300"
+            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#F5E6D3] hover:border-[#CA8A04] transition-all duration-300"
           >
             Back to Contest →
           </Link>
@@ -187,7 +187,7 @@ export function McqRoundArena({
 
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Question Palette */}
-        <aside className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-5 space-y-4 h-fit shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+        <aside className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-5 space-y-4 h-fit shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
           <div className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A]">
             Question Palette
           </div>
@@ -209,7 +209,7 @@ export function McqRoundArena({
                       ? "border-[#CA8A04]/60 bg-[#CA8A04]/15 text-[#CA8A04]"
                       : isAnswered
                       ? "border-[#22C55E]/50 bg-[#22C55E]/15 text-[#22C55E]"
-                      : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                      : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
                   }`}
                 >
                   Q{idx + 1}
@@ -218,7 +218,7 @@ export function McqRoundArena({
             })}
           </div>
 
-          <div className="space-y-1.5 border-t border-[#5C3D2E] pt-3 font-spectral text-xs text-[#BFA98A]">
+          <div className="space-y-1.5 border-t border-[#462E22] pt-3 font-spectral text-xs text-[#BFA98A]">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-[2px] bg-[#22C55E]/25 border border-[#22C55E]" />
               Answered
@@ -228,7 +228,7 @@ export function McqRoundArena({
               Flagged for Review
             </div>
             <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#1A0F0A] border border-[#5C3D2E]" />
+              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#110A07] border border-[#462E22]" />
               Not Answered
             </div>
           </div>
@@ -240,14 +240,14 @@ export function McqRoundArena({
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.2 }}
-          className="lg:col-span-3 rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 space-y-6 shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+          className="lg:col-span-3 rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 space-y-6 shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#5C3D2E] pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#462E22] pb-4">
             <div className="flex items-center gap-2.5">
               <span className="rounded-[2px] border border-[#CA8A04]/50 bg-[#CA8A04]/15 px-2.5 py-1 font-cinzel text-[11px] font-bold uppercase tracking-[1px] text-[#CA8A04]">
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <span className="rounded-[2px] border border-[#5C3D2E] bg-[#1A0F0A] px-2.5 py-1 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
+              <span className="rounded-[2px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
                 {currentQ.difficulty}
               </span>
             </div>
@@ -282,15 +282,15 @@ export function McqRoundArena({
                   }
                   className={`flex w-full items-center gap-3.5 rounded-[4px] border px-4 py-3.5 text-left font-spectral text-sm transition-all duration-300 cursor-pointer ${
                     selected
-                      ? "border-[#CA8A04] bg-[#3D2517] text-[#F5E6D3] shadow-[0_0_16px_rgba(202,138,4,0.18)]"
-                      : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:bg-[#3D2517]/50 hover:text-[#F5E6D3]"
+                      ? "border-[#CA8A04] bg-[#2A1810] text-[#F5E6D3] shadow-[0_0_16px_rgba(202,138,4,0.18)]"
+                      : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:bg-[#2A1810]/50 hover:text-[#F5E6D3]"
                   }`}
                 >
                   <span
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] border font-fira text-xs font-bold uppercase ${
                       selected
-                        ? "border-[#DAA520] bg-[#CA8A04] text-[#1A0F0A]"
-                        : "border-[#5C3D2E] bg-[#2C1A10] text-[#BFA98A]"
+                        ? "border-[#DAA520] bg-[#CA8A04] text-[#110A07]"
+                        : "border-[#462E22] bg-[#1D110B] text-[#BFA98A]"
                     }`}
                   >
                     {opt.id}
@@ -301,13 +301,13 @@ export function McqRoundArena({
             })}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#5C3D2E] pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#462E22] pt-4">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={currentIndex === 0}
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] disabled:opacity-40 transition-all duration-300 cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] disabled:opacity-40 transition-all duration-300 cursor-pointer"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 Previous
@@ -320,7 +320,7 @@ export function McqRoundArena({
                 className={`inline-flex items-center gap-1.5 rounded-[4px] border px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 cursor-pointer ${
                   flagged[currentQ.id]
                     ? "border-[#CA8A04] bg-[#CA8A04]/20 text-[#CA8A04]"
-                    : "border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                    : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
                 }`}
               >
                 <Flag className="h-3.5 w-3.5" />
@@ -334,7 +334,7 @@ export function McqRoundArena({
               onClick={() =>
                 setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
               }
-              className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#CA8A04]/60 bg-[#3D2517] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#DAA520] hover:bg-[#CA8A04] hover:text-[#1A0F0A] disabled:opacity-40 transition-all duration-300 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#DAA520] hover:bg-[#CA8A04] hover:text-[#110A07] disabled:opacity-40 transition-all duration-300 cursor-pointer"
             >
               Next Question
               <ChevronRight className="h-3.5 w-3.5" />

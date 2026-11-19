@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #1A0F0A;
-  --surface: #2C1A10;
-  --surface-elevated: #3D2517;
-  --border-subtle: #5C3D2E;
+  --background: #110A07;
+  --surface: #1D110B;
+  --surface-elevated: #2A1810;
+  --border-subtle: #462E22;
   --primary-gold: #CA8A04;
   --primary-gold-hover: #B8780A;
   --primary-gold-border: #DAA520;
@@ -24,7 +24,7 @@
 }
 
 body {
-  background: #1A0F0A;
+  background: #110A07;
   color: #F5E6D3;
   font-family: var(--font-spectral), Georgia, serif;
   overflow-x: hidden;
@@ -44,23 +44,23 @@ h1, h2, h3, h4, .font-cinzel {
 
 /* QuestUI Surfaces & Elevation */
 .quest-card {
-  background-color: #2C1A10;
-  border: 1px solid #5C3D2E;
+  background-color: #1D110B;
+  border: 1px solid #462E22;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(202, 138, 4, 0.2);
+  box-shadow: 0 2px 10px rgba(202, 138, 4, 0.16);
   transition: box-shadow 300ms ease, border-color 300ms ease, background-color 300ms ease;
 }
 
 .quest-card-elevated {
-  background-color: #3D2517;
+  background-color: #2A1810;
   border: 1px solid rgba(202, 138, 4, 0.25);
   border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(202, 138, 4, 0.25);
+  box-shadow: 0 4px 18px rgba(202, 138, 4, 0.22);
 }
 
 .quest-card-interactive:hover {
   border-color: rgba(202, 138, 4, 0.45);
-  box-shadow: 0 4px 16px rgba(202, 138, 4, 0.28);
+  box-shadow: 0 4px 18px rgba(202, 138, 4, 0.25);
 }
 
 /* QuestUI Scrollbars */
@@ -70,11 +70,11 @@ h1, h2, h3, h4, .font-cinzel {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1A0F0A;
+  background: #110A07;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #5C3D2E;
+  background: #462E22;
   border-radius: 2px;
 }
 

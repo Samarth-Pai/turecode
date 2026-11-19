@@ -192,8 +192,8 @@ export function DslQuestionStudio({
   return (
     <form onSubmit={handleSaveQuestion} className="space-y-6 font-spectral text-[#F5E6D3]">
       {/* Problem Details */}
-      <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#5C3D2E] pb-3">
+      <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#462E22] pb-3">
           <div>
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
               Coding Problem & HackerRank DSL Stub Authoring
@@ -203,7 +203,7 @@ export function DslQuestionStudio({
             </p>
           </div>
 
-          <label className="flex items-center gap-2 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-cinzel text-xs font-semibold text-[#F5E6D3] cursor-pointer">
+          <label className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-cinzel text-xs font-semibold text-[#F5E6D3] cursor-pointer">
             <input
               type="checkbox"
               checked={useDslStubs}
@@ -223,7 +223,7 @@ export function DslQuestionStudio({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
 
@@ -234,7 +234,7 @@ export function DslQuestionStudio({
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value as "Easy" | "Medium" | "Hard")}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             >
               <option value="Easy">Easy</option>
               <option value="Medium">Medium</option>
@@ -249,7 +249,7 @@ export function DslQuestionStudio({
             <input
               value={tagsText}
               onChange={(e) => setTagsText(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
         </div>
@@ -263,7 +263,7 @@ export function DslQuestionStudio({
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+            className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
           />
         </div>
 
@@ -276,7 +276,7 @@ export function DslQuestionStudio({
               rows={2}
               value={inputFormat}
               onChange={(e) => setInputFormat(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
           <div>
@@ -287,7 +287,7 @@ export function DslQuestionStudio({
               rows={2}
               value={constraints}
               onChange={(e) => setConstraints(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
           <div>
@@ -298,15 +298,15 @@ export function DslQuestionStudio({
               rows={2}
               value={outputFormat}
               onChange={(e) => setOutputFormat(e.target.value)}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             />
           </div>
         </div>
       </div>
 
       {/* DSL Code Stub Generator */}
-      <div className="rounded-[4px] border border-[#581C87] bg-[#2C1A10] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#5C3D2E] pb-3">
+      <div className="rounded-[4px] border border-[#581C87] bg-[#1D110B] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#462E22] pb-3">
           <div>
             <h4 className="font-cinzel text-sm font-bold text-[#F5E6D3] flex items-center gap-2">
               <span className="rounded-[2px] border border-[#581C87] bg-[#581C87]/35 px-2 py-0.5 font-fira text-[10px] font-bold uppercase tracking-[1px] text-[#F5E6D3]">
@@ -336,7 +336,7 @@ export function DslQuestionStudio({
                 }
               }}
               defaultValue=""
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+              className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
             >
               <option value="" disabled>
                 Load DSL Preset Template...
@@ -352,7 +352,7 @@ export function DslQuestionStudio({
               type="button"
               onClick={() => runCompileDsl(dslSource)}
               disabled={compiling}
-              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] hover:bg-[#B8780A] disabled:opacity-60 transition-colors duration-300 cursor-pointer"
+              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] disabled:opacity-60 transition-colors duration-300 cursor-pointer"
             >
               {compiling ? "Generating..." : "Generate Code Stubs"}
             </button>
@@ -375,7 +375,7 @@ export function DslQuestionStudio({
                   key={btn.label}
                   type="button"
                   onClick={() => appendDslSnippet(btn.code)}
-                  className="rounded-[2px] border border-[#5C3D2E] bg-[#1A0F0A] px-2 py-0.5 font-fira text-[11px] text-[#CA8A04] hover:border-[#CA8A04] hover:bg-[#3D2517] transition-colors duration-300 cursor-pointer"
+                  className="rounded-[2px] border border-[#462E22] bg-[#110A07] px-2 py-0.5 font-fira text-[11px] text-[#CA8A04] hover:border-[#CA8A04] hover:bg-[#2A1810] transition-colors duration-300 cursor-pointer"
                 >
                   {btn.label}
                 </button>
@@ -387,7 +387,7 @@ export function DslQuestionStudio({
               value={dslSource}
               onChange={(e) => setDslSource(e.target.value)}
               spellCheck={false}
-              className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3 font-fira text-xs leading-relaxed text-[#22C55E] focus:border-[#CA8A04] focus:outline-none"
+              className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] p-3 font-fira text-xs leading-relaxed text-[#22C55E] focus:border-[#CA8A04] focus:outline-none"
             />
 
             {compileResult && !compileResult.valid && (
@@ -411,7 +411,7 @@ export function DslQuestionStudio({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-1">
+              <div className="flex items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] p-1">
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <button
                     key={lang.id}
@@ -419,7 +419,7 @@ export function DslQuestionStudio({
                     onClick={() => setPreviewLang(lang.id)}
                     className={`rounded-[2px] px-2.5 py-1 font-fira text-xs font-semibold transition-colors duration-300 cursor-pointer ${
                       previewLang === lang.id
-                        ? "bg-[#CA8A04] text-[#1A0F0A]"
+                        ? "bg-[#CA8A04] text-[#110A07]"
                         : "text-[#BFA98A] hover:text-[#F5E6D3]"
                     }`}
                   >
@@ -432,7 +432,7 @@ export function DslQuestionStudio({
               </span>
             </div>
 
-            <div className="space-y-2 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3">
+            <div className="space-y-2 rounded-[4px] border border-[#462E22] bg-[#110A07] p-3">
               <div>
                 <div className="font-cinzel text-[10px] font-bold uppercase tracking-[1px] text-[#BFA98A] mb-1">
                   Head (Imports / Includes)
@@ -442,7 +442,7 @@ export function DslQuestionStudio({
                   value={activeStub.head}
                   onChange={(e) => handleStubEdit("head", e.target.value)}
                   spellCheck={false}
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 font-fira text-[11px] text-[#BFA98A] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 font-fira text-[11px] text-[#BFA98A] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
 
@@ -455,7 +455,7 @@ export function DslQuestionStudio({
                   value={activeStub.body}
                   onChange={(e) => handleStubEdit("body", e.target.value)}
                   spellCheck={false}
-                  className="w-full rounded-[4px] border border-[#22C55E]/40 bg-[#2C1A10] p-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#22C55E]/40 bg-[#1D110B] p-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
 
@@ -468,7 +468,7 @@ export function DslQuestionStudio({
                   value={activeStub.tail}
                   onChange={(e) => handleStubEdit("tail", e.target.value)}
                   spellCheck={false}
-                  className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 font-fira text-[11px] text-[#BFA98A] focus:border-[#CA8A04] focus:outline-none"
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 font-fira text-[11px] text-[#BFA98A] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
             </div>
@@ -477,7 +477,7 @@ export function DslQuestionStudio({
       </div>
 
       {/* Test Cases + Sample Explanation Builder */}
-      <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+      <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
         <div className="flex items-center justify-between">
           <div>
             <h4 className="font-cinzel text-sm font-bold text-[#F5E6D3]">
@@ -491,7 +491,7 @@ export function DslQuestionStudio({
           <button
             type="button"
             onClick={addTestCase}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
+            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
           >
             + Add Test Case
           </button>
@@ -501,7 +501,7 @@ export function DslQuestionStudio({
           {testCases.map((tc, idx) => (
             <div
               key={tc.id}
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-4 space-y-3"
+              className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-3"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -531,7 +531,7 @@ export function DslQuestionStudio({
                       onChange={(e) =>
                         updateTestCase(tc.id, { points: Number(e.target.value) || 0 })
                       }
-                      className="w-16 rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] px-2 py-1 font-fira text-xs text-[#F5E6D3]"
+                      className="w-16 rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2 py-1 font-fira text-xs text-[#F5E6D3]"
                     />
                   </label>
                   {testCases.length > 1 && (
@@ -555,7 +555,7 @@ export function DslQuestionStudio({
                     rows={2}
                     value={tc.input}
                     onChange={(e) => updateTestCase(tc.id, { input: e.target.value })}
-                    className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -568,7 +568,7 @@ export function DslQuestionStudio({
                     onChange={(e) =>
                       updateTestCase(tc.id, { expectedOutput: e.target.value })
                     }
-                    className="w-full rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-2 font-fira text-xs text-[#22C55E] focus:border-[#CA8A04] focus:outline-none"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 font-fira text-xs text-[#22C55E] focus:border-[#CA8A04] focus:outline-none"
                   />
                 </div>
               </div>
@@ -585,7 +585,7 @@ export function DslQuestionStudio({
                       updateTestCase(tc.id, { explanation: e.target.value })
                     }
                     placeholder="Explain how the sample input produces the expected output..."
-                    className="w-full rounded-[4px] border border-[#581C87] bg-[#2C1A10] p-2 font-spectral text-xs text-[#F5E6D3] placeholder:text-[#BFA98A]/60 focus:border-[#CA8A04] focus:outline-none"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] p-2 font-spectral text-xs text-[#F5E6D3] placeholder:text-[#BFA98A]/60 focus:border-[#CA8A04] focus:outline-none"
                   />
                 </div>
               )}
@@ -595,7 +595,7 @@ export function DslQuestionStudio({
       </div>
 
       {/* Save & Attach */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#462E22] bg-[#1D110B] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A]">
             Attach to Coding Round (optional):
@@ -606,7 +606,7 @@ export function DslQuestionStudio({
               setTargetContestId(e.target.value);
               setTargetRoundId("");
             }}
-            className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3]"
+            className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3]"
           >
             <option value="">Question Bank Only</option>
             {contests.map((c) => (
@@ -620,7 +620,7 @@ export function DslQuestionStudio({
             <select
               value={targetRoundId}
               onChange={(e) => setTargetRoundId(e.target.value)}
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3]"
+              className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3]"
             >
               <option value="">Select Coding Round...</option>
               {codingRounds.map((r) => (
@@ -635,7 +635,7 @@ export function DslQuestionStudio({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
+          className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
         >
           {saving ? "Saving..." : "Save Coding Question"}
         </button>

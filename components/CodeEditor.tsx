@@ -11,9 +11,13 @@ import { indentWithTab } from "@codemirror/commands";
 import { cpp } from "@codemirror/lang-cpp";
 import { java } from "@codemirror/lang-java";
 import { python } from "@codemirror/lang-python";
-import { indentUnit } from "@codemirror/language";
-import { oneDark } from "@codemirror/theme-one-dark";
+import {
+  HighlightStyle,
+  indentUnit,
+  syntaxHighlighting,
+} from "@codemirror/language";
 import { EditorView, keymap } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 import CodeMirror from "@uiw/react-codemirror";
 import React, { useMemo } from "react";
 import type { LanguageId } from "@/lib/types";
@@ -29,6 +33,92 @@ interface CodeEditorProps {
   extraSymbols?: string[];
   onRunShortcut?: () => void;
 }
+
+const questDarkHighlightStyle = HighlightStyle.define([
+  {
+    tag: [tags.keyword, tags.operatorKeyword, tags.modifier, tags.controlKeyword],
+    color: "#EAA92C",
+    fontWeight: "600",
+  },
+  {
+    tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
+    color: "#F5E6D3",
+  },
+  {
+    tag: [tags.function(tags.variableName), tags.labelName],
+    color: "#FCD34D",
+  },
+  {
+    tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name), tags.bool],
+    color: "#F87171",
+  },
+  {
+    tag: [tags.definition(tags.name), tags.separator],
+    color: "#F5E6D3",
+  },
+  {
+    tag: [tags.typeName, tags.className, tags.changed, tags.annotation, tags.self, tags.namespace],
+    color: "#F59E0B",
+  },
+  {
+    tag: [tags.number, tags.float, tags.integer],
+    color: "#FB923C",
+  },
+  {
+    tag: [tags.operator, tags.url, tags.escape, tags.regexp],
+    color: "#D6A87C",
+  },
+  {
+    tag: [tags.meta, tags.comment],
+    color: "#8C735B",
+    fontStyle: "italic",
+  },
+  {
+    tag: [tags.string, tags.inserted],
+    color: "#4ADE80",
+  },
+  {
+    tag: tags.invalid,
+    color: "#FCA5A5",
+  },
+]);
+
+const questLightHighlightStyle = HighlightStyle.define([
+  {
+    tag: [tags.keyword, tags.operatorKeyword, tags.modifier, tags.controlKeyword],
+    color: "#991B1B",
+    fontWeight: "600",
+  },
+  {
+    tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
+    color: "#2A1810",
+  },
+  {
+    tag: [tags.function(tags.variableName), tags.labelName],
+    color: "#92400E",
+  },
+  {
+    tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name), tags.bool],
+    color: "#B91C1C",
+  },
+  {
+    tag: [tags.typeName, tags.className, tags.annotation, tags.self, tags.namespace],
+    color: "#B45309",
+  },
+  {
+    tag: [tags.number, tags.float, tags.integer],
+    color: "#C2410C",
+  },
+  {
+    tag: [tags.meta, tags.comment],
+    color: "#7C5E46",
+    fontStyle: "italic",
+  },
+  {
+    tag: [tags.string, tags.inserted],
+    color: "#15803D",
+  },
+]);
 
 const LANG_COMPLETIONS: Record<LanguageId, Completion[]> = {
   c: [
@@ -167,21 +257,65 @@ export function CodeEditor({
         : []),
     ]);
 
-    const fontTheme = EditorView.theme({
-      "&": {
-        fontSize: `${fontSize}px`,
-        height: "100%",
-        backgroundColor: themeMode === "dark" ? "#1A0F0A" : "#F5E6D3",
+    const isDark = themeMode === "dark";
+
+    const questEditorTheme = EditorView.theme(
+      {
+        "&": {
+          fontSize: `${fontSize}px`,
+          height: "100%",
+          backgroundColor: isDark ? "#110A07" : "#F5E6D3",
+          color: isDark ? "#F5E6D3" : "#2A1810",
+        },
+        ".cm-content": {
+          caretColor: isDark ? "#DAA520" : "#991B1B",
+          fontFamily: "var(--font-fira-code), ui-monospace, SFMono-Regular, monospace",
+        },
+        ".cm-cursor, .cm-dropCursor": {
+          borderLeftColor: isDark ? "#DAA520" : "#991B1B",
+        },
+        "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+          {
+            backgroundColor: isDark
+              ? "rgba(202, 138, 4, 0.25)"
+              : "rgba(202, 138, 4, 0.28)",
+          },
+        ".cm-activeLine": {
+          backgroundColor: isDark
+            ? "rgba(202, 138, 4, 0.06)"
+            : "rgba(184, 120, 10, 0.08)",
+        },
+        ".cm-gutters": {
+          backgroundColor: isDark ? "#160C08" : "#E8D5BC",
+          borderRight: "1px solid #462E22",
+          color: isDark ? "#8C735B" : "#462E22",
+          fontFamily: "var(--font-fira-code), ui-monospace, SFMono-Regular, monospace",
+        },
+        ".cm-activeLineGutter": {
+          backgroundColor: isDark ? "#2A1810" : "#DEC5A3",
+          color: isDark ? "#DAA520" : "#92400E",
+        },
+        ".cm-foldPlaceholder": {
+          backgroundColor: isDark ? "#1D110B" : "#E8D5BC",
+          border: "1px solid #462E22",
+          color: "#CA8A04",
+        },
+        ".cm-tooltip": {
+          backgroundColor: isDark ? "#1D110B" : "#F5E6D3",
+          border: "1px solid #462E22",
+          color: isDark ? "#F5E6D3" : "#2A1810",
+        },
+        ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
+          backgroundColor: isDark ? "#2A1810" : "#E8D5BC",
+          color: isDark ? "#DAA520" : "#92400E",
+        },
+        "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
+          backgroundColor: "rgba(202, 138, 4, 0.22)",
+          outline: "1px solid rgba(218, 165, 32, 0.5)",
+        },
       },
-      ".cm-gutters": {
-        backgroundColor: themeMode === "dark" ? "#23140D" : "#E8D5BC",
-        borderRight: "1px solid #5C3D2E",
-        color: themeMode === "dark" ? "#BFA98A" : "#5C3D2E",
-      },
-      ".cm-content, .cm-gutter": {
-        fontFamily: "var(--font-fira-code), ui-monospace, SFMono-Regular, monospace",
-      },
-    });
+      { dark: isDark }
+    );
 
     const exts = [
       langExt,
@@ -191,7 +325,10 @@ export function CodeEditor({
         activateOnTyping: true,
       }),
       runKeymap,
-      fontTheme,
+      questEditorTheme,
+      syntaxHighlighting(
+        isDark ? questDarkHighlightStyle : questLightHighlightStyle
+      ),
     ];
 
     if (wordWrap) {
@@ -205,7 +342,7 @@ export function CodeEditor({
     <CodeMirror
       value={value}
       height="100%"
-      theme={themeMode === "dark" ? oneDark : "light"}
+      theme="none"
       extensions={extensions}
       editable={!readOnly}
       onChange={(val) => onChange(val)}

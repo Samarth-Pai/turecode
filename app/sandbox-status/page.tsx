@@ -81,7 +81,7 @@ export default function SandboxStatusPage() {
             <Link href="/moderator" className="hover:text-[#F5E6D3] transition-colors">
               Moderator Studio
             </Link>
-            <span className="text-[#5C3D2E]">/</span>
+            <span className="text-[#462E22]">/</span>
             <span className="text-[#CA8A04]">Sandbox Health</span>
           </div>
           <h1 className="font-cinzel text-2xl font-bold text-[#F5E6D3] mt-0.5">
@@ -92,14 +92,14 @@ export default function SandboxStatusPage() {
         <button
           type="button"
           onClick={loadHealth}
-          className="rounded-[4px] border border-[#5C3D2E] bg-[#3D2517] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
+          className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
         >
           Refresh Status
         </button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-5 space-y-3 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-5 space-y-3 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
           <div className="flex items-center justify-between">
             <h2 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A]">
               Fork-Server Daemon
@@ -116,15 +116,15 @@ export default function SandboxStatusPage() {
           </div>
 
           <dl className="space-y-2 text-xs">
-            <div className="flex justify-between gap-2 border-b border-[#5C3D2E] pb-1.5">
+            <div className="flex justify-between gap-2 border-b border-[#462E22] pb-1.5">
               <dt className="text-[#BFA98A]">Unix Domain Socket</dt>
               <dd className="font-fira text-[#CA8A04]">{health?.daemon_socket ?? "..."}</dd>
             </div>
-            <div className="flex justify-between gap-2 border-b border-[#5C3D2E] pb-1.5">
+            <div className="flex justify-between gap-2 border-b border-[#462E22] pb-1.5">
               <dt className="text-[#BFA98A]">Workspaces Root</dt>
               <dd className="font-fira text-[#F5E6D3]">{health?.workspaces_root ?? "..."}</dd>
             </div>
-            <div className="flex justify-between gap-2 border-b border-[#5C3D2E] pb-1.5">
+            <div className="flex justify-between gap-2 border-b border-[#462E22] pb-1.5">
               <dt className="text-[#BFA98A]">Languages</dt>
               <dd className="font-fira text-[#22C55E]">
                 {health?.supported_languages.join(", ").toUpperCase() ?? "C, CPP, JAVA, PYTHON"}
@@ -137,24 +137,24 @@ export default function SandboxStatusPage() {
           </dl>
         </div>
 
-        <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-5 space-y-3 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-5 space-y-3 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
           <h2 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A]">
             Kernel Isolation & Resource Bounds
           </h2>
           <dl className="space-y-2 text-xs">
-            <div className="flex justify-between gap-3 border-b border-[#5C3D2E] pb-1.5">
+            <div className="flex justify-between gap-3 border-b border-[#462E22] pb-1.5">
               <dt className="text-[#BFA98A]">Filesystem Jail</dt>
               <dd className="text-right text-[#22C55E]">
                 {health?.security.filesystem_isolation ?? "..."}
               </dd>
             </div>
-            <div className="flex justify-between gap-3 border-b border-[#5C3D2E] pb-1.5">
+            <div className="flex justify-between gap-3 border-b border-[#462E22] pb-1.5">
               <dt className="text-[#BFA98A]">Privilege Escalation</dt>
               <dd className="text-right font-fira text-[#CA8A04]">
                 {health?.security.privilege_escalation ?? "..."}
               </dd>
             </div>
-            <div className="flex justify-between gap-3 border-b border-[#5C3D2E] pb-1.5">
+            <div className="flex justify-between gap-3 border-b border-[#462E22] pb-1.5">
               <dt className="text-[#BFA98A]">CPU Limit</dt>
               <dd className="text-right font-fira text-[#F5E6D3]">
                 {health?.security.cpu_limit ?? "..."}
@@ -170,7 +170,7 @@ export default function SandboxStatusPage() {
         </div>
       </div>
 
-      <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
+      <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="font-cinzel text-base font-bold text-[#F5E6D3]">
@@ -185,7 +185,7 @@ export default function SandboxStatusPage() {
             <select
               value={concurrency}
               onChange={(e) => setConcurrency(Number(e.target.value))}
-              className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-1.5 font-fira text-xs text-[#F5E6D3]"
+              className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-fira text-xs text-[#F5E6D3]"
             >
               <option value={8}>8 jobs</option>
               <option value={12}>12 jobs</option>
@@ -196,7 +196,7 @@ export default function SandboxStatusPage() {
               type="button"
               onClick={runBenchmark}
               disabled={running}
-              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#1A0F0A] hover:bg-[#B8780A] disabled:opacity-50 transition-colors duration-300 cursor-pointer"
+              className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] disabled:opacity-50 transition-colors duration-300 cursor-pointer"
             >
               {running ? "Running Burst..." : "Run Concurrent Test"}
             </button>
@@ -206,7 +206,7 @@ export default function SandboxStatusPage() {
         {bench && (
           <div className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3">
+              <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3">
                 <div className="font-cinzel text-[10px] uppercase tracking-[1px] text-[#BFA98A]">
                   Success Rate
                 </div>
@@ -214,7 +214,7 @@ export default function SandboxStatusPage() {
                   {bench.successCount} / {bench.concurrency}
                 </div>
               </div>
-              <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3">
+              <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3">
                 <div className="font-cinzel text-[10px] uppercase tracking-[1px] text-[#BFA98A]">
                   Wall Time
                 </div>
@@ -222,7 +222,7 @@ export default function SandboxStatusPage() {
                   {bench.totalWallMs} ms
                 </div>
               </div>
-              <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3">
+              <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3">
                 <div className="font-cinzel text-[10px] uppercase tracking-[1px] text-[#BFA98A]">
                   Throughput
                 </div>
@@ -230,7 +230,7 @@ export default function SandboxStatusPage() {
                   {bench.throughputRps} jobs/sec
                 </div>
               </div>
-              <div className="rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] p-3">
+              <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-3">
                 <div className="font-cinzel text-[10px] uppercase tracking-[1px] text-[#BFA98A]">
                   Errors
                 </div>

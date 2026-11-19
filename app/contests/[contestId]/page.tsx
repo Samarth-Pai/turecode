@@ -119,7 +119,7 @@ function ContestLobbyContent() {
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 space-y-6">
       {/* Contest Header Card */}
-      <div className="rounded-[4px] border border-[#5C3D2E] border-t-2 border-t-[#CA8A04] bg-[#2C1A10] p-6 shadow-[0_4px_16px_rgba(202,138,4,0.22)] space-y-5">
+      <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_4px_16px_rgba(202,138,4,0.22)] space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
@@ -145,7 +145,7 @@ function ContestLobbyContent() {
 
           <div className="flex flex-wrap items-center gap-2.5">
             {isModerator && contest.joinCode && (
-              <div className="flex items-center gap-2 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3 py-2 text-xs">
+              <div className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-xs">
                 <span className="font-spectral text-[#BFA98A]">Join Code:</span>
                 <code className="font-fira font-bold text-[#CA8A04]">
                   {contest.joinCode}
@@ -179,15 +179,15 @@ function ContestLobbyContent() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#3D2517] pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#2A1810] pt-4">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setTab("rounds")}
               className={`rounded-[2px] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
                 tab === "rounds"
-                  ? "bg-[#CA8A04] text-[#1A0F0A]"
-                  : "border border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:text-[#F5E6D3]"
+                  ? "bg-[#CA8A04] text-[#110A07]"
+                  : "border border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:text-[#F5E6D3]"
               }`}
             >
               Contest Rounds ({contest.rounds.length})
@@ -199,8 +199,8 @@ function ContestLobbyContent() {
                 onClick={() => setTab("leaderboard")}
                 className={`rounded-[2px] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
                   tab === "leaderboard"
-                    ? "bg-[#CA8A04] text-[#1A0F0A]"
-                    : "border border-[#5C3D2E] bg-[#1A0F0A] text-[#BFA98A] hover:text-[#F5E6D3]"
+                    ? "bg-[#CA8A04] text-[#110A07]"
+                    : "border border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:text-[#F5E6D3]"
                 }`}
               >
                 Moderator Leaderboard
@@ -217,7 +217,7 @@ function ContestLobbyContent() {
 
       {/* Sign In or Join Code Gate */}
       {!currentUser ? (
-        <div className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-8 text-center space-y-3 shadow-[0_2px_8px_rgba(202,138,4,0.2)]">
+        <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-8 text-center space-y-3 shadow-[0_2px_8px_rgba(202,138,4,0.2)]">
           <h2 className="font-cinzel text-base font-bold text-[#F5E6D3]">
             Sign in required to participate
           </h2>
@@ -226,15 +226,15 @@ function ContestLobbyContent() {
           </p>
           <Link
             href="/login"
-            className="inline-block rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] hover:bg-[#B8780A]"
+            className="inline-block rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] hover:bg-[#B8780A]"
           >
             Sign In
           </Link>
         </div>
       ) : !isEnrolled && !isModerator ? (
-        <div className="rounded-[4px] border border-[#CA8A04]/40 bg-[#2C1A10] p-6 space-y-4 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
+        <div className="rounded-[4px] border border-[#CA8A04]/40 bg-[#1D110B] p-6 space-y-4 shadow-[0_4px_16px_rgba(202,138,4,0.22)]">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#CA8A04]/40 bg-[#3D2517] text-[#CA8A04]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#CA8A04]/40 bg-[#2A1810] text-[#CA8A04]">
               <KeyRound className="h-5 w-5" />
             </div>
             <div>
@@ -255,12 +255,12 @@ function ContestLobbyContent() {
               value={joinCodeInput}
               onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
               placeholder="Enter Joining Code"
-              className="w-56 h-10 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-3.5 py-2 font-fira text-sm font-semibold uppercase text-[#F5E6D3] hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:outline-none"
+              className="w-56 h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3.5 py-2 font-fira text-sm font-semibold uppercase text-[#F5E6D3] hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:outline-none"
             />
             <button
               type="submit"
               disabled={joinBusy}
-              className="h-10 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#1A0F0A] hover:bg-[#B8780A] disabled:opacity-35 cursor-pointer"
+              className="h-10 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] hover:bg-[#B8780A] disabled:opacity-35 cursor-pointer"
             >
               {joinBusy ? "Joining..." : "Unlock Contest"}
             </button>
@@ -278,7 +278,7 @@ function ContestLobbyContent() {
       {tab === "rounds" || !isModerator ? (
         <div className="space-y-4">
           {contest.rounds.length === 0 ? (
-            <div className="rounded-[4px] border border-dashed border-[#5C3D2E] bg-[#2C1A10] p-10 text-center font-spectral text-sm text-[#BFA98A]">
+            <div className="rounded-[4px] border border-dashed border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
               No rounds scheduled in this contest yet.
             </div>
           ) : (
@@ -291,7 +291,7 @@ function ContestLobbyContent() {
               return (
                 <div
                   key={round.id}
-                  className="rounded-[4px] border border-[#5C3D2E] bg-[#2C1A10] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] hover:border-[#CA8A04]/50 transition-all duration-300 space-y-4"
+                  className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] hover:border-[#CA8A04]/50 transition-all duration-300 space-y-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-1.5">
@@ -300,7 +300,7 @@ function ContestLobbyContent() {
                           className={`rounded-[2px] px-2.5 py-0.5 font-cinzel text-[10px] font-semibold uppercase tracking-[1px] ${
                             round.type === "coding"
                               ? "border border-[#581C87] bg-[#581C87]/35 text-[#E9D5FF]"
-                              : "border border-[#5C3D2E] bg-[#3D2517] text-[#CA8A04]"
+                              : "border border-[#462E22] bg-[#2A1810] text-[#CA8A04]"
                           }`}
                         >
                           {round.type === "coding"
@@ -334,7 +334,7 @@ function ContestLobbyContent() {
                           href={`/contests/${contest.id}/rounds/${round.id}`}
                           className={`inline-flex items-center gap-1.5 rounded-[4px] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] transition-all duration-300 ${
                             status === "ACTIVE"
-                              ? "border border-[#DAA520] bg-[#CA8A04] text-[#1A0F0A] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A]"
+                              ? "border border-[#DAA520] bg-[#CA8A04] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A]"
                               : "border border-[#CA8A04] bg-transparent text-[#CA8A04] hover:bg-[#CA8A04]/10"
                           }`}
                         >
@@ -345,7 +345,7 @@ function ContestLobbyContent() {
                         <button
                           type="button"
                           disabled
-                          className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#5C3D2E] bg-[#1A0F0A] px-5 py-2.5 font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#BFA98A] opacity-35 cursor-not-allowed"
+                          className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#462E22] bg-[#110A07] px-5 py-2.5 font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#BFA98A] opacity-35 cursor-not-allowed"
                         >
                           <Lock className="h-3.5 w-3.5" />
                           {!unlocked
@@ -367,7 +367,7 @@ function ContestLobbyContent() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 border-t border-[#3D2517] pt-3 font-fira text-xs text-[#BFA98A]">
+                  <div className="flex flex-wrap items-center gap-4 border-t border-[#2A1810] pt-3 font-fira text-xs text-[#BFA98A]">
                     <span>{round.questions.length} Questions</span>
                     {isModerator && (
                       <>
