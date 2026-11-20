@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Code2, Search } from "lucide-react";
+import { BookOpen, Code2, Pencil, Search, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { DslQuestionStudio } from "@/components/DslQuestionStudio";
 import type { CodingQuestion, Question } from "@/lib/types";
@@ -23,6 +23,27 @@ export function PlatformQuestionBank({
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDslStudio, setShowDslStudio] = useState(Boolean(defaultRoundId));
+  const [editingQuestion, setEditingQuestion] = useState<CodingQuestion | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteQuestion = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/questions?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setConfirmDeleteId(null);
+        if (editingQuestion?.id === id) {
+          setEditingQuestion(null);
+        }
+        onUpdated();
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const codingQuestions = questions.filter(
     (q): q is CodingQuestion => q.kind === "coding"
@@ -57,7 +78,15 @@ export function PlatformQuestionBank({
 
           <button
             type="button"
-            onClick={() => setShowDslStudio((v) => !v)}
+            onClick={() => {
+              if (showDslStudio) {
+                setShowDslStudio(false);
+                setEditingQuestion(null);
+              } else {
+                setEditingQuestion(null);
+                setShowDslStudio(true);
+              }
+            }}
             className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
           >
             <Code2 className="h-3.5 w-3.5" />
@@ -159,6 +188,45 @@ export function PlatformQuestionBank({
                     <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1 font-fira text-[11px] text-[#BFA98A]">
                       {sampleCount} sample / {hiddenCount} hidden test cases
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingQuestion(q);
+                        setShowDslStudio(true);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#CA8A04] hover:border-[#DAA520] cursor-pointer"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
+                    {confirmDeleteId === q.id ? (
+                      <div className="inline-flex items-center gap-1 rounded-[4px] border border-[#B91C1C] bg-[#991B1B]/25 px-2 py-0.5">
+                        <button
+                          type="button"
+                          disabled={deletingId === q.id}
+                          onClick={() => handleDeleteQuestion(q.id)}
+                          className="rounded-[2px] bg-[#B91C1C] px-2 py-0.5 font-cinzel text-[10px] font-bold uppercase text-white hover:bg-[#DC2626] disabled:opacity-50 cursor-pointer"
+                        >
+                          {deletingId === q.id ? "..." : "Confirm"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="px-1.5 py-0.5 font-cinzel text-[10px] text-[#BFA98A] hover:text-[#F5E6D3] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(q.id)}
+                        className="inline-flex items-center gap-1 rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#FCA5A5] hover:bg-[#991B1B]/35 cursor-pointer"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -170,8 +238,11 @@ export function PlatformQuestionBank({
       {/* Collapsible DSL Coding Question Studio */}
       {showDslStudio && (
         <DslQuestionStudio
+          key={editingQuestion?.id ?? "new"}
           defaultContestId={activeContestId}
           defaultRoundId={defaultRoundId}
+          initialQuestion={editingQuestion ?? undefined}
+          onStartNew={() => setEditingQuestion(null)}
           onCreated={() => {
             onUpdated();
           }}

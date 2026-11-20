@@ -10,6 +10,7 @@ import {
 import {
   SUPPORTED_LANGUAGES,
   type CodeStubBundle,
+  type CodingQuestion,
   type CodingTestCase,
   type LanguageId,
 } from "@/lib/types";
@@ -17,59 +18,79 @@ import {
 interface DslQuestionStudioProps {
   defaultContestId?: string;
   defaultRoundId?: string;
+  initialQuestion?: CodingQuestion;
   onCreated?: (questionId: string) => void;
+  onStartNew?: () => void;
 }
 
 export function DslQuestionStudio({
   defaultContestId,
   defaultRoundId,
+  initialQuestion,
   onCreated,
+  onStartNew,
 }: DslQuestionStudioProps) {
-  const [title, setTitle] = useState("Two Sum Pair Check");
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Easy");
+  const [questionId, setQuestionId] = useState<string | undefined>(initialQuestion?.id);
+  const [title, setTitle] = useState(initialQuestion?.title ?? "Two Sum Pair Check");
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">(
+    initialQuestion?.difficulty ?? "Easy"
+  );
   const [description, setDescription] = useState(
-    "Given an array of integers and a target integer, solve the problem inside the generated function stub."
+    initialQuestion?.description ??
+      "Given an array of integers and a target integer, solve the problem inside the generated function stub."
   );
   const [inputFormat, setInputFormat] = useState(
-    "First line: n (array size). Second line: n space-separated integers."
+    initialQuestion?.inputFormat ??
+      "First line: n (array size). Second line: n space-separated integers."
   );
-  const [constraints, setConstraints] = useState("1 <= n <= 10^5\n-10^9 <= arr[i] <= 10^9");
+  const [constraints, setConstraints] = useState(
+    initialQuestion?.constraints ?? "1 <= n <= 10^5\n-10^9 <= arr[i] <= 10^9"
+  );
   const [outputFormat, setOutputFormat] = useState(
-    "Return the required integer result from your function."
+    initialQuestion?.outputFormat ??
+      "Return the required integer result from your function."
   );
-  const [tagsText, setTagsText] = useState("Arrays, DSL");
+  const [tagsText, setTagsText] = useState(
+    initialQuestion?.tags?.join(", ") ?? "Arrays, DSL"
+  );
 
-  const [useDslStubs, setUseDslStubs] = useState(true);
-  const [dslSource, setDslSource] = useState(DSL_PRESETS[0].dsl);
+  const [useDslStubs, setUseDslStubs] = useState(initialQuestion?.useDslStubs ?? true);
+  const [dslSource, setDslSource] = useState(
+    initialQuestion?.dslSource ?? DSL_PRESETS[0].dsl
+  );
   const [initialCompiled] = useState<DslCompileResult>(() =>
-    compileDslToStubs(DSL_PRESETS[0].dsl)
+    compileDslToStubs(initialQuestion?.dslSource ?? DSL_PRESETS[0].dsl)
   );
   const [compileResult, setCompileResult] = useState<DslCompileResult | null>(
     initialCompiled
   );
   const [stubs, setStubs] = useState<Record<LanguageId, CodeStubBundle>>(
-    initialCompiled.stubs
+    initialQuestion?.codeStubs ?? initialCompiled.stubs
   );
   const [previewLang, setPreviewLang] = useState<LanguageId>("cpp");
   const [compiling, setCompiling] = useState(false);
 
-  const [testCases, setTestCases] = useState<CodingTestCase[]>([
-    {
-      id: "tc-new-1",
-      input: "5\n1 2 3 4 5\n",
-      expectedOutput: "15",
-      isSample: true,
-      points: 50,
-      explanation: "Sum of elements 1 + 2 + 3 + 4 + 5 = 15.",
-    },
-    {
-      id: "tc-new-2",
-      input: "3\n10 20 30\n",
-      expectedOutput: "60",
-      isSample: false,
-      points: 50,
-    },
-  ]);
+  const [testCases, setTestCases] = useState<CodingTestCase[]>(
+    initialQuestion?.testCases?.length
+      ? initialQuestion.testCases
+      : [
+          {
+            id: "tc-new-1",
+            input: "5\n1 2 3 4 5\n",
+            expectedOutput: "15",
+            isSample: true,
+            points: 50,
+            explanation: "Sum of elements 1 + 2 + 3 + 4 + 5 = 15.",
+          },
+          {
+            id: "tc-new-2",
+            input: "3\n10 20 30\n",
+            expectedOutput: "60",
+            isSample: false,
+            points: 50,
+          },
+        ]
+  );
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "ok" | "err"; text: string } | null>(
@@ -218,6 +239,7 @@ export function DslQuestionStudio({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...(questionId ? { id: questionId } : {}),
           kind: "coding",
           title,
           difficulty,
@@ -242,9 +264,10 @@ export function DslQuestionStudio({
         setSaveMessage({ type: "err", text: data.error || "Failed to save question" });
         return;
       }
+      setQuestionId(data.question.id);
       setSaveMessage({
         type: "ok",
-        text: `Saved "${data.question.title}" with C, C++, Java & Python DSL code stubs!`,
+        text: `${questionId ? "Updated" : "Saved"} "${data.question.title}" with C, C++, Java & Python DSL code stubs!`,
       });
       onCreated?.(data.question.id);
     } finally {
@@ -261,12 +284,23 @@ export function DslQuestionStudio({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#462E22] pb-3">
           <div>
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
-              Coding Problem & HackerRank DSL Stub Authoring
+              {questionId
+                ? `Editing Coding Problem: ${title}`
+                : "Coding Problem & HackerRank DSL Stub Authoring"}
             </h3>
             <p className="font-spectral text-xs text-[#BFA98A]">
               Define problem details, generate C/C++/Java/Python DSL stubs, and add sample test case explanations.
             </p>
           </div>
+          {questionId && onStartNew && (
+            <button
+              type="button"
+              onClick={onStartNew}
+              className="rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] cursor-pointer"
+            >
+              + Create New Problem Instead
+            </button>
+          )}
 
           <label className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-cinzel text-xs font-semibold text-[#F5E6D3] cursor-pointer">
             <input

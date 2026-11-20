@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { connection, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 import { compileDslToStubs } from "@/lib/dsl";
 import { mutateDb, readDb } from "@/lib/db";
 import type {
@@ -239,6 +239,17 @@ export async function POST(request: Request) {
     };
 
     const saved = await mutateDb((db) => {
+      if (!body.id) {
+        const duplicate = db.questions.find(
+          (q) =>
+            q.kind === "coding" &&
+            q.title.trim().toLowerCase() === title.toLowerCase()
+        );
+        if (duplicate) {
+          return { duplicate: true as const, existingTitle: duplicate.title };
+        }
+      }
+
       const idx = db.questions.findIndex((q) => q.id === newCoding.id);
       if (idx >= 0) {
         db.questions[idx] = newCoding;
@@ -253,13 +264,68 @@ export async function POST(request: Request) {
           round.questionIds.push(newCoding.id);
         }
       }
-      return newCoding;
+      return { duplicate: false as const, question: newCoding };
     });
 
-    return NextResponse.json({ question: saved }, { status: 201 });
+    if ("duplicate" in saved && saved.duplicate) {
+      return NextResponse.json(
+        {
+          error: `A coding question titled "${saved.existingTitle}" already exists in the Question Bank. Use Edit on the existing question instead.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json({ question: saved.question }, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to save question" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    let questionId = request.nextUrl.searchParams.get("id")?.trim() || "";
+    if (!questionId) {
+      const body = await request.json().catch(() => ({}));
+      questionId = String(body.id ?? "").trim();
+    }
+
+    if (!questionId) {
+      return NextResponse.json(
+        { error: "Question id is required" },
+        { status: 400 }
+      );
+    }
+
+    const removed = await mutateDb((db) => {
+      const idx = db.questions.findIndex((q) => q.id === questionId);
+      if (idx === -1) return false;
+      db.questions.splice(idx, 1);
+
+      for (const contest of db.contests) {
+        for (const round of contest.rounds) {
+          round.questionIds = round.questionIds.filter((id) => id !== questionId);
+          if (round.sections) {
+            for (const sec of round.sections) {
+              sec.questionIds = sec.questionIds.filter((id) => id !== questionId);
+            }
+          }
+        }
+      }
+      return true;
+    });
+
+    if (!removed) {
+      return NextResponse.json({ error: "Question not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to delete question" },
       { status: 500 }
     );
   }
