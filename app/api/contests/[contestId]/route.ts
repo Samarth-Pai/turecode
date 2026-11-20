@@ -116,6 +116,19 @@ export async function PATCH(
           endTime: body.endTime || new Date(now + 24 * 3600 * 1000).toISOString(),
           durationMinutes: Number(body.durationMinutes) || 60,
           questionIds: Array.isArray(body.questionIds) ? body.questionIds : [],
+          ...(roundType === "mcq"
+            ? {
+                sections: [
+                  {
+                    id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+                    title: "Section A: General",
+                    questionIds: Array.isArray(body.questionIds)
+                      ? body.questionIds
+                      : [],
+                  },
+                ],
+              }
+            : {}),
         };
         contest.rounds.push(newRound);
         return { contest, addedRound: newRound };

@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, ChevronLeft, ChevronRight, Flag, Send } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Flag, Layers, Send } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { LatexText } from "@/components/LatexText";
 import { useUser } from "@/components/UserContext";
-import type { MCQQuestion, MCQSubmission, Round } from "@/lib/types";
+import type { MCQQuestion, MCQSubmission, McqSection, Round } from "@/lib/types";
 
 interface McqRoundArenaProps {
   contestId: string;
@@ -13,6 +14,13 @@ interface McqRoundArenaProps {
   round: Round;
   questions: MCQQuestion[];
   scheduleStatus: "UPCOMING" | "ACTIVE" | "ENDED";
+}
+
+interface IndexedMcqItem {
+  question: MCQQuestion;
+  globalIdx: number;
+  sectionId: string;
+  sectionTitle: string;
 }
 
 export function McqRoundArena({
@@ -29,6 +37,80 @@ export function McqRoundArena({
   const [submitting, setSubmitting] = useState(false);
   const [submittedNotice, setSubmittedNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Track exact per-question view time for solve-time evaluation
+  const questionStartMsRef = useRef<Record<string, number>>({});
+  const accumulatedSecRef = useRef<Record<string, number>>({});
+  const lastActiveQIdRef = useRef<string | null>(null);
+  const lastEnterMsRef = useRef<number>(0);
+
+  const { sectionGroups, orderedItems } = useMemo(() => {
+    const qMap = new Map(questions.map((q) => [q.id, q]));
+    const sections: McqSection[] =
+      round.sections && round.sections.length > 0
+        ? round.sections
+        : [
+            {
+              id: "default-section",
+              title: "Assessment Questions",
+              questionIds: questions.map((q) => q.id),
+            },
+          ];
+
+    const groups: {
+      section: McqSection;
+      items: IndexedMcqItem[];
+    }[] = [];
+    const flat: IndexedMcqItem[] = [];
+    const seen = new Set<string>();
+
+    for (const sec of sections) {
+      const items: IndexedMcqItem[] = [];
+      for (const qId of sec.questionIds) {
+        const q = qMap.get(qId);
+        if (!q || seen.has(q.id)) continue;
+        seen.add(q.id);
+        const item: IndexedMcqItem = {
+          question: q,
+          globalIdx: flat.length,
+          sectionId: sec.id,
+          sectionTitle: sec.title,
+        };
+        items.push(item);
+        flat.push(item);
+      }
+      if (items.length > 0) {
+        groups.push({ section: sec, items });
+      }
+    }
+
+    // Fallback for any questions in round not mapped to a section
+    const ungrouped: IndexedMcqItem[] = [];
+    for (const q of questions) {
+      if (seen.has(q.id)) continue;
+      seen.add(q.id);
+      const item: IndexedMcqItem = {
+        question: q,
+        globalIdx: flat.length,
+        sectionId: "extra-section",
+        sectionTitle: q.sectionName || "General Section",
+      };
+      ungrouped.push(item);
+      flat.push(item);
+    }
+    if (ungrouped.length > 0) {
+      groups.push({
+        section: {
+          id: "extra-section",
+          title: "General Section",
+          questionIds: ungrouped.map((u) => u.question.id),
+        },
+        items: ungrouped,
+      });
+    }
+
+    return { sectionGroups: groups, orderedItems: flat };
+  }, [questions, round.sections]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -63,7 +145,39 @@ export function McqRoundArena({
     };
   }, [contestId, round.id, currentUser]);
 
-  if (questions.length === 0) {
+  const currentItem = orderedItems[currentIndex] ?? orderedItems[0];
+  const currentQId = currentItem?.question.id ?? null;
+
+  // Track active question timer locally + notify server attempt start
+  useEffect(() => {
+    if (!currentQId || !currentUser) return;
+    const now = Date.now();
+
+    if (lastActiveQIdRef.current && lastActiveQIdRef.current !== currentQId) {
+      const prevId = lastActiveQIdRef.current;
+      const elapsedSec = Math.max(0, (now - lastEnterMsRef.current) / 1000);
+      accumulatedSecRef.current[prevId] =
+        (accumulatedSecRef.current[prevId] ?? 0) + elapsedSec;
+    }
+
+    lastActiveQIdRef.current = currentQId;
+    lastEnterMsRef.current = now;
+    if (!questionStartMsRef.current[currentQId]) {
+      questionStartMsRef.current[currentQId] = now;
+      fetch("/api/attempts/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contestId,
+          roundId: round.id,
+          questionId: currentQId,
+          userId: currentUser.id,
+        }),
+      }).catch(() => undefined);
+    }
+  }, [contestId, round.id, currentQId, currentUser]);
+
+  if (orderedItems.length === 0 || !currentItem) {
     return (
       <div className="mx-auto max-w-4xl p-8 text-center font-spectral text-sm text-[#BFA98A]">
         No MCQ questions have been added to this round yet.
@@ -71,8 +185,8 @@ export function McqRoundArena({
     );
   }
 
-  const currentQ = questions[currentIndex] ?? questions[0];
-  const answeredCount = questions.filter((q) => Boolean(answers[q.id])).length;
+  const currentQ = currentItem.question;
+  const answeredCount = orderedItems.filter((it) => Boolean(answers[it.question.id])).length;
   const canSubmit =
     Boolean(currentUser) &&
     (scheduleStatus === "ACTIVE" || currentUser?.role === "moderator");
@@ -80,10 +194,26 @@ export function McqRoundArena({
   const handleSubmitAll = async () => {
     if (!currentUser) return;
     setError(null);
-    const payloadAnswers = Object.entries(answers).map(([questionId, selectedOptionId]) => ({
-      questionId,
-      selectedOptionId,
-    }));
+
+    const now = Date.now();
+    if (lastActiveQIdRef.current) {
+      const prevId = lastActiveQIdRef.current;
+      accumulatedSecRef.current[prevId] =
+        (accumulatedSecRef.current[prevId] ?? 0) +
+        Math.max(0, (now - lastEnterMsRef.current) / 1000);
+      lastEnterMsRef.current = now;
+    }
+
+    const payloadAnswers = Object.entries(answers).map(
+      ([questionId, selectedOptionId]) => ({
+        questionId,
+        selectedOptionId,
+        timeTakenSeconds: Math.max(
+          1,
+          Math.round(accumulatedSecRef.current[questionId] ?? 0)
+        ),
+      })
+    );
 
     if (payloadAnswers.length === 0) {
       setError("Please answer at least one question before submitting.");
@@ -140,7 +270,7 @@ export function McqRoundArena({
           <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3.5 py-2 font-fira text-xs text-[#BFA98A]">
             Answered:{" "}
             <strong className="text-[#CA8A04]">{answeredCount}</strong> /{" "}
-            <span className="text-[#F5E6D3]">{questions.length}</span>
+            <span className="text-[#F5E6D3]">{orderedItems.length}</span>
           </div>
 
           <button
@@ -186,34 +316,78 @@ export function McqRoundArena({
       )}
 
       <div className="grid gap-6 lg:grid-cols-4">
-        {/* Question Palette */}
-        <aside className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-5 space-y-4 h-fit shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-          <div className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A]">
-            Question Palette
+        {/* Left Sidebar: Section & Question Palette */}
+        <aside className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-5 space-y-5 h-fit shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center justify-between border-b border-[#462E22] pb-2.5">
+            <span className="inline-flex items-center gap-1.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#CA8A04]">
+              <Layers className="h-3.5 w-3.5" />
+              Sections & Palette
+            </span>
+            <span className="font-fira text-[11px] text-[#BFA98A]">
+              {sectionGroups.length} sec
+            </span>
           </div>
-          <div className="grid grid-cols-5 gap-2">
-            {questions.map((q, idx) => {
-              const isCurrent = idx === currentIndex;
-              const isAnswered = Boolean(answers[q.id]);
-              const isFlagged = Boolean(flagged[q.id]);
+
+          <div className="space-y-4">
+            {sectionGroups.map((group) => {
+              const isCurrentSec = group.section.id === currentItem.sectionId;
+              const secAnswered = group.items.filter((it) =>
+                Boolean(answers[it.question.id])
+              ).length;
 
               return (
-                <button
-                  key={q.id}
-                  type="button"
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`h-9 rounded-[2px] font-fira text-xs font-bold border transition-all duration-300 cursor-pointer ${
-                    isCurrent
-                      ? "border-[#DAA520] bg-[#CA8A04]/25 text-[#F5E6D3] shadow-[0_0_12px_rgba(202,138,4,0.28)]"
-                      : isFlagged
-                      ? "border-[#CA8A04]/60 bg-[#CA8A04]/15 text-[#CA8A04]"
-                      : isAnswered
-                      ? "border-[#22C55E]/50 bg-[#22C55E]/15 text-[#22C55E]"
-                      : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                <div
+                  key={group.section.id}
+                  className={`rounded-[4px] border p-3 space-y-2.5 transition-colors ${
+                    isCurrentSec
+                      ? "border-[#CA8A04]/60 bg-[#2A1810]/60"
+                      : "border-[#462E22] bg-[#110A07]/60"
                   }`}
                 >
-                  Q{idx + 1}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentIndex(group.items[0].globalIdx)}
+                    className="flex w-full items-center justify-between gap-2 text-left cursor-pointer"
+                  >
+                    <span
+                      className={`font-cinzel text-[11px] font-bold leading-snug ${
+                        isCurrentSec ? "text-[#CA8A04]" : "text-[#F5E6D3]"
+                      }`}
+                    >
+                      {group.section.title}
+                    </span>
+                    <span className="shrink-0 rounded-[2px] border border-[#462E22] bg-[#110A07] px-1.5 py-0.5 font-fira text-[10px] text-[#BFA98A]">
+                      {secAnswered}/{group.items.length}
+                    </span>
+                  </button>
+
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {group.items.map((item) => {
+                      const isCurrent = item.globalIdx === currentIndex;
+                      const isAnswered = Boolean(answers[item.question.id]);
+                      const isFlagged = Boolean(flagged[item.question.id]);
+
+                      return (
+                        <button
+                          key={item.question.id}
+                          type="button"
+                          onClick={() => setCurrentIndex(item.globalIdx)}
+                          className={`h-8 rounded-[2px] font-fira text-xs font-bold border transition-all duration-200 cursor-pointer ${
+                            isCurrent
+                              ? "border-[#DAA520] bg-[#CA8A04] text-[#110A07] shadow-[0_0_10px_rgba(202,138,4,0.3)]"
+                              : isFlagged
+                              ? "border-[#CA8A04]/60 bg-[#CA8A04]/15 text-[#CA8A04]"
+                              : isAnswered
+                              ? "border-[#22C55E]/50 bg-[#22C55E]/15 text-[#22C55E]"
+                              : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                          }`}
+                        >
+                          Q{item.globalIdx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -234,7 +408,7 @@ export function McqRoundArena({
           </div>
         </aside>
 
-        {/* Active Question */}
+        {/* Active Question (No Question Title or Topics — Section + LaTeX Prompt) */}
         <motion.section
           key={currentQ.id}
           initial={{ opacity: 0, x: 10 }}
@@ -243,9 +417,12 @@ export function McqRoundArena({
           className="lg:col-span-3 rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 space-y-6 shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#462E22] pb-4">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-[2px] border border-[#CA8A04]/50 bg-[#CA8A04]/15 px-2.5 py-1 font-cinzel text-[11px] font-bold uppercase tracking-[1px] text-[#CA8A04]">
-                Question {currentIndex + 1} of {questions.length}
+                Question {currentIndex + 1} of {orderedItems.length}
+              </span>
+              <span className="rounded-[2px] border border-[#462E22] bg-[#160C08] px-2.5 py-1 font-cinzel text-[11px] font-semibold text-[#F5E6D3]">
+                {currentItem.sectionTitle}
               </span>
               <span className="rounded-[2px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
                 {currentQ.difficulty}
@@ -260,13 +437,8 @@ export function McqRoundArena({
             </div>
           </div>
 
-          <div className="space-y-3">
-            <h2 className="font-cinzel text-xl font-bold text-[#F5E6D3]">
-              {currentQ.title}
-            </h2>
-            <p className="font-spectral text-base leading-relaxed text-[#F5E6D3]/90 whitespace-pre-line">
-              {currentQ.prompt}
-            </p>
+          <div className="font-spectral text-base leading-[1.75] text-[#F5E6D3] whitespace-pre-line">
+            <LatexText text={currentQ.prompt} />
           </div>
 
           <div className="space-y-2.5">
@@ -295,7 +467,9 @@ export function McqRoundArena({
                   >
                     {opt.id}
                   </span>
-                  <span>{opt.text}</span>
+                  <span className="flex-1">
+                    <LatexText text={opt.text} />
+                  </span>
                 </motion.button>
               );
             })}
@@ -330,9 +504,9 @@ export function McqRoundArena({
 
             <button
               type="button"
-              disabled={currentIndex >= questions.length - 1}
+              disabled={currentIndex >= orderedItems.length - 1}
               onClick={() =>
-                setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
+                setCurrentIndex((i) => Math.min(orderedItems.length - 1, i + 1))
               }
               className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#DAA520] hover:bg-[#CA8A04] hover:text-[#110A07] disabled:opacity-40 transition-all duration-300 cursor-pointer"
             >

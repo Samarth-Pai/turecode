@@ -1,6 +1,28 @@
+import crypto from "node:crypto";
 import { connection, NextResponse } from "next/server";
 import { mutateDb, readDb } from "@/lib/db";
-import { getRoundStatus, type Question } from "@/lib/types";
+import { getRoundStatus, type Question, type Round } from "@/lib/types";
+
+function syncQuestionIdsWithSections(round: Round) {
+  if (round.type !== "mcq" || !round.sections || round.sections.length === 0) return;
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const sec of round.sections) {
+    sec.questionIds = sec.questionIds.filter((id) => {
+      if (seen.has(id)) return false;
+      seen.add(id);
+      ordered.push(id);
+      return true;
+    });
+  }
+  for (const id of round.questionIds) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ordered.push(id);
+    }
+  }
+  round.questionIds = ordered;
+}
 
 export async function GET(
   _req: Request,
@@ -62,7 +84,6 @@ export async function PATCH(
         round.durationMinutes = body.durationMinutes;
       }
 
-      // Schedule updates
       if (body.startTime) {
         round.startTime = new Date(body.startTime).toISOString();
       }
@@ -86,8 +107,46 @@ export async function PATCH(
         round.endTime = new Date(now - 60 * 1000).toISOString();
       }
 
-      // Add / Remove question actions
-      if (body.action === "add_question" && typeof body.questionId === "string") {
+      // Section management for MCQ rounds
+      if (body.action === "add_section") {
+        const secTitle = String(body.sectionTitle ?? "").trim();
+        if (!secTitle) {
+          return { error: "Section title is required.", status: 400 as const };
+        }
+        if (!round.sections) {
+          round.sections = [];
+          if (round.questionIds.length > 0) {
+            round.sections.push({
+              id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+              title: "Section A: Existing Questions",
+              questionIds: [...round.questionIds],
+            });
+          }
+        }
+        round.sections.push({
+          id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+          title: secTitle,
+          description:
+            typeof body.sectionDescription === "string"
+              ? body.sectionDescription.trim()
+              : undefined,
+          questionIds: [],
+        });
+        syncQuestionIdsWithSections(round);
+      } else if (body.action === "rename_section" && typeof body.sectionId === "string") {
+        const sec = round.sections?.find((s) => s.id === body.sectionId);
+        if (sec && typeof body.sectionTitle === "string" && body.sectionTitle.trim()) {
+          sec.title = body.sectionTitle.trim();
+        }
+      } else if (body.action === "delete_section" && typeof body.sectionId === "string") {
+        const sec = round.sections?.find((s) => s.id === body.sectionId);
+        if (sec && round.sections) {
+          const removedSet = new Set(sec.questionIds);
+          round.sections = round.sections.filter((s) => s.id !== body.sectionId);
+          round.questionIds = round.questionIds.filter((id) => !removedSet.has(id));
+          syncQuestionIdsWithSections(round);
+        }
+      } else if (body.action === "add_question" && typeof body.questionId === "string") {
         const q = db.questions.find((item) => item.id === body.questionId);
         if (!q) {
           return { error: "Question not found in bank", status: 404 as const };
@@ -98,13 +157,39 @@ export async function PATCH(
             status: 400 as const,
           };
         }
+        if (round.type === "mcq") {
+          if (!round.sections) {
+            round.sections = [
+              {
+                id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+                title: "Section A: General",
+                questionIds: [...round.questionIds],
+              },
+            ];
+          }
+          const targetSection =
+            (typeof body.sectionId === "string" &&
+              round.sections.find((s) => s.id === body.sectionId)) ||
+            round.sections[0];
+          if (targetSection && !targetSection.questionIds.includes(q.id)) {
+            targetSection.questionIds.push(q.id);
+          }
+        }
         if (!round.questionIds.includes(q.id)) {
           round.questionIds.push(q.id);
         }
+        syncQuestionIdsWithSections(round);
       } else if (body.action === "remove_question" && typeof body.questionId === "string") {
         round.questionIds = round.questionIds.filter((id) => id !== body.questionId);
+        if (round.sections) {
+          for (const sec of round.sections) {
+            sec.questionIds = sec.questionIds.filter((id) => id !== body.questionId);
+          }
+        }
       } else if (body.action === "reorder_questions" && Array.isArray(body.questionIds)) {
-        round.questionIds = body.questionIds.filter((id: unknown): id is string => typeof id === "string");
+        round.questionIds = body.questionIds.filter(
+          (id: unknown): id is string => typeof id === "string"
+        );
       }
 
       return { round, scheduleStatus: getRoundStatus(round), status: 200 as const };

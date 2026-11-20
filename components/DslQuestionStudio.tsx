@@ -6,19 +6,16 @@ import {
   SUPPORTED_LANGUAGES,
   type CodeStubBundle,
   type CodingTestCase,
-  type Contest,
   type LanguageId,
 } from "@/lib/types";
 
 interface DslQuestionStudioProps {
-  contests: Contest[];
   defaultContestId?: string;
   defaultRoundId?: string;
   onCreated?: (questionId: string) => void;
 }
 
 export function DslQuestionStudio({
-  contests,
   defaultContestId,
   defaultRoundId,
   onCreated,
@@ -69,8 +66,6 @@ export function DslQuestionStudio({
     },
   ]);
 
-  const [targetContestId, setTargetContestId] = useState(defaultContestId || "");
-  const [targetRoundId, setTargetRoundId] = useState(defaultRoundId || "");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "ok" | "err"; text: string } | null>(
     null
@@ -93,10 +88,6 @@ export function DslQuestionStudio({
       setCompiling(false);
     }
   };
-
-  const selectedContest = contests.find((c) => c.id === targetContestId);
-  const codingRounds =
-    selectedContest?.rounds.filter((r) => r.type === "coding") ?? [];
 
   const appendDslSnippet = (snippet: string) => {
     setDslSource((prev) => (prev.trimEnd() ? `${prev.trimEnd()}\n${snippet}` : snippet));
@@ -168,8 +159,8 @@ export function DslQuestionStudio({
           dslSource,
           codeStubs: stubs,
           testCases,
-          contestId: targetContestId || undefined,
-          roundId: targetRoundId || undefined,
+          contestId: defaultContestId || undefined,
+          roundId: defaultRoundId || undefined,
         }),
       });
       const data = await res.json();
@@ -594,50 +585,18 @@ export function DslQuestionStudio({
         </div>
       </div>
 
-      {/* Save & Attach */}
+      {/* Save Coding Question to Bank */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#462E22] bg-[#1D110B] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A]">
-            Attach to Coding Round (optional):
-          </span>
-          <select
-            value={targetContestId}
-            onChange={(e) => {
-              setTargetContestId(e.target.value);
-              setTargetRoundId("");
-            }}
-            className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3]"
-          >
-            <option value="">Question Bank Only</option>
-            {contests.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title}
-              </option>
-            ))}
-          </select>
-
-          {targetContestId && (
-            <select
-              value={targetRoundId}
-              onChange={(e) => setTargetRoundId(e.target.value)}
-              className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3]"
-            >
-              <option value="">Select Coding Round...</option>
-              {codingRounds.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.title}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        <span className="font-spectral text-xs text-[#BFA98A]">
+          Saves this coding problem with C, C++, Java &amp; Python stubs directly to the Question Bank.
+        </span>
 
         <button
           type="submit"
           disabled={saving}
           className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] disabled:opacity-50 transition-all duration-300 cursor-pointer"
         >
-          {saving ? "Saving..." : "Save Coding Question"}
+          {saving ? "Saving..." : "Save Coding Question to Bank"}
         </button>
       </div>
 

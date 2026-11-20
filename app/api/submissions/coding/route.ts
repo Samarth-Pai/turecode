@@ -1,15 +1,39 @@
 import crypto from "node:crypto";
+import { cookies } from "next/headers";
 import { connection, NextRequest, NextResponse } from "next/server";
-import { computeLeaderboard, mutateDb, readDb } from "@/lib/db";
+import { SESSION_COOKIE_NAME } from "@/lib/auth";
+import {
+  computeLeaderboard,
+  computeSolveTimeSeconds,
+  getSessionData,
+  mutateDb,
+  readDb,
+} from "@/lib/db";
 import { sandboxExecutor } from "@/lib/sandbox";
 import {
   getRoundStatus,
   stitchCodeStub,
   type CodingSubmission,
+  type CodingTestCaseResult,
   type LanguageId,
 } from "@/lib/types";
 
 const ALLOWED_LANGUAGES = new Set<LanguageId>(["c", "cpp", "java", "python"]);
+
+/** Strips input/output details from hidden test case results so only status and timing remain. */
+function redactHiddenTestCases(results: CodingTestCaseResult[]): CodingTestCaseResult[] {
+  return results.map((tc) =>
+    tc.isSample
+      ? tc
+      : {
+          testCaseId: tc.testCaseId,
+          isSample: false,
+          passed: tc.passed,
+          status: tc.status,
+          executionTimeMs: tc.executionTimeMs,
+        }
+  );
+}
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -18,9 +42,15 @@ export async function GET(request: NextRequest) {
   const questionId = request.nextUrl.searchParams.get("questionId");
   const userId = request.nextUrl.searchParams.get("userId");
 
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const session = await getSessionData(token);
+
   const db = await readDb();
   const reqUser = userId ? db.users.find((u) => u.id === userId) : null;
-  const isMod = reqUser?.role === "moderator";
+  const isMod =
+    session.user?.role === "moderator" || reqUser?.role === "moderator";
+  const userMap = new Map(db.users.map((u) => [u.id, u]));
 
   const submissions = db.codingSubmissions
     .filter((s) => {
@@ -31,9 +61,15 @@ export async function GET(request: NextRequest) {
       return true;
     })
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-    .map((s) =>
-      isMod
-        ? s
+    .map((s) => {
+      const u = userMap.get(s.userId);
+      return isMod
+        ? {
+            ...s,
+            userName: u?.name ?? s.userId,
+            userHandle: u?.handle ?? s.userId,
+            testCaseResults: s.testCaseResults ?? [],
+          }
         : {
             id: s.id,
             contestId: s.contestId,
@@ -42,10 +78,15 @@ export async function GET(request: NextRequest) {
             userId: s.userId,
             language: s.language,
             sourceCode: s.sourceCode,
-            status: "Submitted",
+            status: s.status,
+            passedCount: s.passedCount,
+            totalCount: s.totalCount,
+            executionTimeMs: s.executionTimeMs,
+            compileError: s.compileError,
+            testCaseResults: redactHiddenTestCases(s.testCaseResults ?? []),
             submittedAt: s.submittedAt,
-          }
-    );
+          };
+    });
 
   return NextResponse.json({ submissions });
 }
@@ -135,15 +176,21 @@ export async function POST(request: Request) {
         mode: "run",
         customRun: false,
         ...evalRes,
+        testCaseResults: redactHiddenTestCases(evalRes.testCaseResults),
       });
     }
 
     // Official submission against all test cases (sample + hidden)
-    const evalRes = await sandboxExecutor.evaluateSubmission(
-      language,
-      fullSourceCode,
-      question.testCases
-    );
+    const [evalRes, timeTakenSeconds] = await Promise.all([
+      sandboxExecutor.evaluateSubmission(language, fullSourceCode, question.testCases),
+      computeSolveTimeSeconds({
+        contestId,
+        roundId,
+        questionId,
+        userId,
+        roundStartTimeIso: round.startTime,
+      }),
+    ]);
 
     const submission: CodingSubmission = {
       id: `sub-code-${crypto.randomUUID().slice(0, 8)}`,
@@ -160,6 +207,7 @@ export async function POST(request: Request) {
       passedCount: evalRes.passedCount,
       totalCount: evalRes.totalCount,
       executionTimeMs: evalRes.executionTimeMs,
+      timeTakenSeconds,
       runId: evalRes.runId,
       compileError: evalRes.compileError,
       testCaseResults: evalRes.testCaseResults,
@@ -170,6 +218,8 @@ export async function POST(request: Request) {
       mutDb.codingSubmissions.push(submission);
       return computeLeaderboard(mutDb, contestId);
     });
+
+    const redactedResults = redactHiddenTestCases(evalRes.testCaseResults);
 
     if (!isMod) {
       return NextResponse.json({
@@ -183,7 +233,13 @@ export async function POST(request: Request) {
           userId: submission.userId,
           language: submission.language,
           sourceCode: submission.sourceCode,
-          status: "Submitted",
+          status: submission.status,
+          passedCount: submission.passedCount,
+          totalCount: submission.totalCount,
+          executionTimeMs: submission.executionTimeMs,
+          runId: submission.runId,
+          compileError: submission.compileError,
+          testCaseResults: redactedResults,
           submittedAt: submission.submittedAt,
         },
       });
@@ -194,7 +250,7 @@ export async function POST(request: Request) {
       submitted: true,
       submission: {
         ...submission,
-        testCaseResults: evalRes.testCaseResults,
+        testCaseResults: redactedResults,
       },
       leaderboard: leaderboard.entries,
     });

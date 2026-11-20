@@ -400,7 +400,7 @@ export class SandboxedExecutor {
             testCaseId: tc.id,
             isSample: tc.isSample,
             passed: false,
-            status: "Runtime Error",
+            status: "Compilation Error",
             executionTimeMs: 0,
           })),
         };

@@ -54,19 +54,82 @@ export async function POST(request: Request) {
     const later = new Date(now.getTime() + 24 * 3600 * 1000);
 
     const initialRounds: Round[] = Array.isArray(body.rounds)
-      ? body.rounds.map((r: Partial<Round>, idx: number) => ({
+      ? body.rounds.map((r: Partial<Round>, idx: number) => {
+          const rType = r.type === "coding" ? "coding" : "mcq";
+          const qIds = Array.isArray(r.questionIds) ? r.questionIds.map(String) : [];
+          return {
+            id: `round-${crypto.randomUUID().slice(0, 8)}`,
+            contestId,
+            title: String(r.title || `Round ${idx + 1}`),
+            description: String(r.description || ""),
+            type: rType,
+            order: idx + 1,
+            startTime: r.startTime || now.toISOString(),
+            endTime: r.endTime || later.toISOString(),
+            durationMinutes: Number(r.durationMinutes) || 60,
+            questionIds: qIds,
+            ...(rType === "mcq"
+              ? {
+                  sections:
+                    Array.isArray(r.sections) && r.sections.length > 0
+                      ? r.sections
+                      : [
+                          {
+                            id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+                            title: "Section A: General",
+                            questionIds: qIds,
+                          },
+                        ],
+                }
+              : {}),
+          };
+        })
+      : [];
+
+    const initialMcqIds: string[] = Array.isArray(body.initialMcqQuestionIds)
+      ? body.initialMcqQuestionIds.map(String).filter(Boolean)
+      : [];
+    const initialCodingIds: string[] = Array.isArray(body.initialCodingQuestionIds)
+      ? body.initialCodingQuestionIds.map(String).filter(Boolean)
+      : [];
+
+    if (initialRounds.length === 0) {
+      if (initialMcqIds.length > 0) {
+        initialRounds.push({
           id: `round-${crypto.randomUUID().slice(0, 8)}`,
           contestId,
-          title: String(r.title || `Round ${idx + 1}`),
-          description: String(r.description || ""),
-          type: r.type === "coding" ? "coding" : "mcq",
-          order: idx + 1,
-          startTime: r.startTime || now.toISOString(),
-          endTime: r.endTime || later.toISOString(),
-          durationMinutes: Number(r.durationMinutes) || 60,
-          questionIds: Array.isArray(r.questionIds) ? r.questionIds : [],
-        }))
-      : [];
+          title: "Round 1: MCQ Screening",
+          description: "Multiple-choice screening round.",
+          type: "mcq",
+          order: initialRounds.length + 1,
+          startTime: now.toISOString(),
+          endTime: later.toISOString(),
+          durationMinutes: 30,
+          questionIds: initialMcqIds,
+          sections: [
+            {
+              id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+              title: "Section A: General",
+              questionIds: initialMcqIds,
+            },
+          ],
+        });
+      }
+      if (initialCodingIds.length > 0) {
+        initialRounds.push({
+          id: `round-${crypto.randomUUID().slice(0, 8)}`,
+          contestId,
+          title: `Round ${initialRounds.length + 1}: Coding Challenge`,
+          description: "Algorithmic coding round in the Rootless Landlock Sandbox.",
+          type: "coding",
+          order: initialRounds.length + 1,
+          startTime: now.toISOString(),
+          endTime: later.toISOString(),
+          durationMinutes: 90,
+          questionIds: initialCodingIds,
+        });
+      }
+    }
 
     const created = await mutateDb((db) => {
       let joinCode = customJoinCode || generateJoinCode();

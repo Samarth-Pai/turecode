@@ -11,6 +11,19 @@ import type {
   MCQQuestion,
 } from "@/lib/types";
 
+interface IncomingMcqPayload {
+  id?: string;
+  prompt?: string;
+  options?: MCQOption[];
+  correctOptionId?: string;
+  points?: number;
+  negativePoints?: number;
+  difficulty?: "Easy" | "Medium" | "Hard";
+  explanation?: string;
+  sectionName?: string;
+  tags?: string[];
+}
+
 export async function GET() {
   await connection();
   const db = await readDb();
@@ -23,54 +36,118 @@ export async function POST(request: Request) {
     const kind = body.kind === "coding" ? "coding" : "mcq";
 
     if (kind === "mcq") {
-      const title = String(body.title ?? "").trim();
-      const prompt = String(body.prompt ?? "").trim();
-      const options: MCQOption[] = Array.isArray(body.options) ? body.options : [];
-      const correctOptionId = String(body.correctOptionId ?? "");
+      const items: IncomingMcqPayload[] = Array.isArray(body.questions)
+        ? body.questions
+        : [body];
 
-      if (!title || !prompt || options.length < 2 || !correctOptionId) {
+      if (items.length === 0) {
         return NextResponse.json(
-          { error: "MCQ requires title, prompt, at least 2 options, and correctOptionId" },
+          { error: "At least one MCQ question is required." },
           { status: 400 }
         );
       }
 
-      const newMcq: MCQQuestion = {
-        id: body.id ? String(body.id) : `mcq-${crypto.randomUUID().slice(0, 8)}`,
-        kind: "mcq",
-        title,
-        prompt,
-        options: options.map((o, idx) => ({
-          id: String(o.id || String.fromCharCode(97 + idx)),
-          text: String(o.text ?? "").trim(),
-        })),
-        correctOptionId,
-        points: Number(body.points) || 25,
-        negativePoints: Number(body.negativePoints) || 0,
-        difficulty: body.difficulty === "Hard" ? "Hard" : body.difficulty === "Medium" ? "Medium" : "Easy",
-        explanation: typeof body.explanation === "string" ? body.explanation.trim() : undefined,
-        tags: Array.isArray(body.tags) ? body.tags.map(String) : ["General"],
-      };
+      const sectionId =
+        typeof body.sectionId === "string" ? body.sectionId.trim() : "";
+      const newSectionTitle =
+        typeof body.newSectionTitle === "string" ? body.newSectionTitle.trim() : "";
+
+      const normalizedMcqs: MCQQuestion[] = [];
+      for (const item of items) {
+        const prompt = String(item.prompt ?? "").trim();
+        const options: MCQOption[] = Array.isArray(item.options) ? item.options : [];
+        const correctOptionId = String(item.correctOptionId ?? "");
+
+        if (!prompt || options.length < 2 || !correctOptionId) {
+          return NextResponse.json(
+            { error: "Each MCQ requires a prompt, at least 2 options, and correctOptionId." },
+            { status: 400 }
+          );
+        }
+
+        normalizedMcqs.push({
+          id: item.id ? String(item.id) : `mcq-${crypto.randomUUID().slice(0, 8)}`,
+          kind: "mcq",
+          sectionName:
+            typeof item.sectionName === "string" && item.sectionName.trim()
+              ? item.sectionName.trim()
+              : newSectionTitle || undefined,
+          prompt,
+          options: options.map((o, idx) => ({
+            id: String(o.id || String.fromCharCode(97 + idx)),
+            text: String(o.text ?? "").trim(),
+          })),
+          correctOptionId,
+          points: Number(item.points) || 25,
+          negativePoints: Number(item.negativePoints) || 0,
+          difficulty:
+            item.difficulty === "Hard"
+              ? "Hard"
+              : item.difficulty === "Medium"
+              ? "Medium"
+              : "Easy",
+          explanation:
+            typeof item.explanation === "string" && item.explanation.trim()
+              ? item.explanation.trim()
+              : undefined,
+          tags: Array.isArray(item.tags) ? item.tags.map(String) : ["General"],
+        });
+      }
 
       const saved = await mutateDb((db) => {
-        const idx = db.questions.findIndex((q) => q.id === newMcq.id);
-        if (idx >= 0) {
-          db.questions[idx] = newMcq;
-        } else {
-          db.questions.push(newMcq);
-        }
+        for (const newMcq of normalizedMcqs) {
+          const idx = db.questions.findIndex((q) => q.id === newMcq.id);
+          if (idx >= 0) {
+            db.questions[idx] = newMcq;
+          } else {
+            db.questions.push(newMcq);
+          }
 
-        if (body.contestId && body.roundId) {
-          const contest = db.contests.find((c) => c.id === body.contestId);
-          const round = contest?.rounds.find((r) => r.id === body.roundId);
-          if (round && round.type === "mcq" && !round.questionIds.includes(newMcq.id)) {
-            round.questionIds.push(newMcq.id);
+          if (body.contestId && body.roundId) {
+            const contest = db.contests.find((c) => c.id === body.contestId);
+            const round = contest?.rounds.find((r) => r.id === body.roundId);
+            if (round && round.type === "mcq") {
+              if (!round.sections) round.sections = [];
+
+              let targetSection = sectionId
+                ? round.sections.find((s) => s.id === sectionId)
+                : undefined;
+
+              if (!targetSection && newSectionTitle) {
+                targetSection = {
+                  id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+                  title: newSectionTitle,
+                  questionIds: [],
+                };
+                round.sections.push(targetSection);
+              } else if (!targetSection && round.sections.length === 0) {
+                targetSection = {
+                  id: `sec-${crypto.randomUUID().slice(0, 8)}`,
+                  title: "Section A: General",
+                  questionIds: [...round.questionIds],
+                };
+                round.sections.push(targetSection);
+              } else if (!targetSection) {
+                targetSection = round.sections[0];
+              }
+
+              newMcq.sectionName = targetSection.title;
+              if (!targetSection.questionIds.includes(newMcq.id)) {
+                targetSection.questionIds.push(newMcq.id);
+              }
+              if (!round.questionIds.includes(newMcq.id)) {
+                round.questionIds.push(newMcq.id);
+              }
+            }
           }
         }
-        return newMcq;
+        return normalizedMcqs;
       });
 
-      return NextResponse.json({ question: saved }, { status: 201 });
+      return NextResponse.json(
+        { question: saved[0], questions: saved },
+        { status: 201 }
+      );
     }
 
     // Coding question creation
@@ -101,7 +178,9 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      codeStubs = body.codeStubs ? (body.codeStubs as Record<LanguageId, CodeStubBundle>) : compiled.stubs;
+      codeStubs = body.codeStubs
+        ? (body.codeStubs as Record<LanguageId, CodeStubBundle>)
+        : compiled.stubs;
     } else {
       codeStubs = body.codeStubs as Record<LanguageId, CodeStubBundle>;
     }
@@ -134,12 +213,23 @@ export async function POST(request: Request) {
       id: body.id ? String(body.id) : `code-${crypto.randomUUID().slice(0, 8)}`,
       kind: "coding",
       title,
-      difficulty: body.difficulty === "Hard" ? "Hard" : body.difficulty === "Medium" ? "Medium" : "Easy",
+      difficulty:
+        body.difficulty === "Hard"
+          ? "Hard"
+          : body.difficulty === "Medium"
+          ? "Medium"
+          : "Easy",
       points: Number(body.points) || totalPoints,
       description,
-      inputFormat: String(body.inputFormat ?? "Standard input as specified by the DSL schema."),
-      constraints: String(body.constraints ?? "Standard competitive programming limits."),
-      outputFormat: String(body.outputFormat ?? "Return the required value from the function stub."),
+      inputFormat: String(
+        body.inputFormat ?? "Standard input as specified by the DSL schema."
+      ),
+      constraints: String(
+        body.constraints ?? "Standard competitive programming limits."
+      ),
+      outputFormat: String(
+        body.outputFormat ?? "Return the required value from the function stub."
+      ),
       tags: Array.isArray(body.tags) ? body.tags.map(String) : ["Algorithms"],
       useDslStubs,
       dslSource,

@@ -44,10 +44,23 @@ export async function POST(request: Request) {
     const contestId = String(body.contestId ?? "");
     const roundId = String(body.roundId ?? "");
     const userId = String(body.userId ?? "");
-    const answers: { questionId: string; selectedOptionId: string }[] = Array.isArray(body.answers)
+    const answers: {
+      questionId: string;
+      selectedOptionId: string;
+      timeTakenSeconds?: number;
+    }[] = Array.isArray(body.answers)
       ? body.answers
       : body.questionId && body.selectedOptionId
-      ? [{ questionId: String(body.questionId), selectedOptionId: String(body.selectedOptionId) }]
+      ? [
+          {
+            questionId: String(body.questionId),
+            selectedOptionId: String(body.selectedOptionId),
+            timeTakenSeconds:
+              typeof body.timeTakenSeconds === "number"
+                ? body.timeTakenSeconds
+                : undefined,
+          },
+        ]
       : [];
 
     if (!contestId || !roundId || !userId || answers.length === 0) {
@@ -74,8 +87,10 @@ export async function POST(request: Request) {
         };
       }
 
-      const now = new Date().toISOString();
+      const nowMs = Date.now();
+      const now = new Date(nowMs).toISOString();
       const recorded: MCQSubmission[] = [];
+      const roundStartMs = new Date(round.startTime).getTime();
 
       for (const ans of answers) {
         if (!round.questionIds.includes(ans.questionId)) continue;
@@ -86,6 +101,28 @@ export async function POST(request: Request) {
 
         const isCorrect = q.correctOptionId === ans.selectedOptionId;
         const score = isCorrect ? q.points : -q.negativePoints;
+
+        // Calculate time taken to solve this question
+        let solveSeconds =
+          typeof ans.timeTakenSeconds === "number" && ans.timeTakenSeconds > 0
+            ? Math.round(ans.timeTakenSeconds)
+            : 0;
+
+        if (solveSeconds <= 0) {
+          const attempt = (db.questionAttempts ?? []).find(
+            (a) =>
+              a.contestId === contestId &&
+              a.roundId === roundId &&
+              a.questionId === ans.questionId &&
+              a.userId === userId
+          );
+          const startMs = attempt
+            ? new Date(attempt.startedAt).getTime()
+            : roundStartMs;
+          solveSeconds = Number.isNaN(startMs)
+            ? 1
+            : Math.max(1, Math.round((nowMs - startMs) / 1000));
+        }
 
         // Replace previous submission for same user + round + question
         db.mcqSubmissions = db.mcqSubmissions.filter(
@@ -107,6 +144,7 @@ export async function POST(request: Request) {
           selectedOptionId: ans.selectedOptionId,
           isCorrect,
           score,
+          timeTakenSeconds: solveSeconds,
           submittedAt: now,
         };
         db.mcqSubmissions.push(sub);

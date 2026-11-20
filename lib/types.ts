@@ -40,7 +40,9 @@ export interface MCQOption {
 export interface MCQQuestion {
   id: string;
   kind: "mcq";
-  title: string;
+  /** Optional legacy label; MCQs primarily live inside round sections without individual titles. */
+  title?: string;
+  sectionName?: string;
   prompt: string;
   options: MCQOption[];
   correctOptionId: string;
@@ -84,6 +86,13 @@ export type RoundType = "mcq" | "coding";
 
 export type RoundScheduleStatus = "UPCOMING" | "ACTIVE" | "ENDED";
 
+export interface McqSection {
+  id: string;
+  title: string;
+  description?: string;
+  questionIds: string[];
+}
+
 export interface Round {
   id: string;
   contestId: string;
@@ -95,6 +104,7 @@ export interface Round {
   endTime: string;
   durationMinutes: number;
   questionIds: string[];
+  sections?: McqSection[];
 }
 
 export interface Contest {
@@ -119,6 +129,24 @@ export interface ProctoringViolation {
   updatedAt: string;
 }
 
+export interface QuestionAttempt {
+  contestId: string;
+  roundId: string;
+  questionId: string;
+  userId: string;
+  startedAt: string;
+}
+
+export interface ScoreOverride {
+  contestId: string;
+  roundId: string;
+  userId: string;
+  overrideScore: number;
+  reason?: string;
+  updatedBy?: string;
+  updatedAt: string;
+}
+
 export interface MCQSubmission {
   id: string;
   contestId: string;
@@ -128,6 +156,7 @@ export interface MCQSubmission {
   selectedOptionId: string;
   isCorrect: boolean;
   score: number;
+  timeTakenSeconds?: number;
   submittedAt: string;
 }
 
@@ -135,7 +164,12 @@ export interface CodingTestCaseResult {
   testCaseId: string;
   isSample: boolean;
   passed: boolean;
-  status: "Passed" | "Wrong Answer" | "Runtime Error" | "Time Limit Exceeded";
+  status:
+    | "Passed"
+    | "Wrong Answer"
+    | "Runtime Error"
+    | "Time Limit Exceeded"
+    | "Compilation Error";
   executionTimeMs: number;
   input?: string;
   expectedOutput?: string;
@@ -166,6 +200,7 @@ export interface CodingSubmission {
   passedCount: number;
   totalCount: number;
   executionTimeMs: number;
+  timeTakenSeconds?: number;
   runId: string;
   compileError?: string;
   testCaseResults: CodingTestCaseResult[];
@@ -180,8 +215,12 @@ export interface LeaderboardEntry {
   totalScore: number;
   maxPossibleScore: number;
   roundScores: Record<string, number>;
+  originalRoundScores?: Record<string, number>;
+  overriddenRoundIds?: string[];
   problemsAttempted: number;
   problemsSolved: number;
+  totalSolveTimeSeconds: number;
+  questionSolveTimes: Record<string, number>;
   totalExecutionTimeMs: number;
   lastSubmittedAt: string | null;
 }
@@ -199,9 +238,14 @@ export interface DatabaseSchema {
   contestEnrollments: ContestEnrollment[];
   mcqSubmissions: MCQSubmission[];
   codingSubmissions: CodingSubmission[];
+  questionAttempts?: QuestionAttempt[];
+  scoreOverrides?: ScoreOverride[];
 }
 
-export function getRoundStatus(round: Pick<Round, "startTime" | "endTime">, nowMs = Date.now()): RoundScheduleStatus {
+export function getRoundStatus(
+  round: Pick<Round, "startTime" | "endTime">,
+  nowMs = Date.now()
+): RoundScheduleStatus {
   const start = new Date(round.startTime).getTime();
   const end = new Date(round.endTime).getTime();
   if (Number.isNaN(start) || Number.isNaN(end)) return "ACTIVE";
@@ -215,4 +259,21 @@ export function stitchCodeStub(bundle: CodeStubBundle, bodyCode: string): string
     (p): p is string => Boolean(p && p.length > 0)
   );
   return parts.join("\n\n") + "\n";
+}
+
+export function getQuestionSummary(q: Question, maxLen = 72): string {
+  if (q.kind === "coding") return q.title;
+  const raw = q.prompt.replace(/\$\$?/g, "").replace(/\s+/g, " ").trim();
+  return raw.length > maxLen ? `${raw.slice(0, maxLen - 1)}…` : raw;
+}
+
+export function formatDurationSeconds(totalSec: number): string {
+  if (!totalSec || totalSec <= 0) return "—";
+  const s = Math.round(totalSec);
+  const mins = Math.floor(s / 60);
+  const rem = s % 60;
+  if (mins === 0) return `${rem}s`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs === 0) return `${mins}m ${String(rem).padStart(2, "0")}s`;
+  return `${hrs}h ${String(mins % 60).padStart(2, "0")}m`;
 }

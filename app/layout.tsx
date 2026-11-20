@@ -3,6 +3,7 @@ import { Cinzel, Fira_Code, Spectral } from "next/font/google";
 import { Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { UserProvider } from "@/components/UserContext";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
 const cinzel = Cinzel({

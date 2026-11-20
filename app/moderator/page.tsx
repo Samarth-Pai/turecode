@@ -1,14 +1,22 @@
 "use client";
 
-import { CheckCircle2, Copy, RefreshCw, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Copy, Layers, Plus, RefreshCw, Search, ShieldAlert, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useState } from "react";
-import { DslQuestionStudio } from "@/components/DslQuestionStudio";
+import { LatexText } from "@/components/LatexText";
 import { LeaderboardPanel } from "@/components/LeaderboardPanel";
 import { McqQuestionModal } from "@/components/McqQuestionModal";
+import { ModeratorSubmissionsFeed } from "@/components/ModeratorSubmissionsFeed";
+import { PlatformQuestionBank } from "@/components/PlatformQuestionBank";
 import { useUser } from "@/components/UserContext";
-import { getRoundStatus, type Contest, type Question, type Round } from "@/lib/types";
+import {
+  getQuestionSummary,
+  getRoundStatus,
+  type Contest,
+  type Question,
+  type Round,
+} from "@/lib/types";
 
 function toLocalInputValue(iso: string): string {
   const d = new Date(iso);
@@ -31,13 +39,14 @@ function RoundEditorCard({
   round: Round;
   questionBank: Question[];
   onUpdated: () => void;
-  onOpenNewMcq: (roundId: string) => void;
+  onOpenNewMcq: (roundId: string, sectionId?: string) => void;
   onOpenNewCoding: (roundId: string) => void;
 }) {
   const [startLocal, setStartLocal] = useState(toLocalInputValue(round.startTime));
   const [endLocal, setEndLocal] = useState(toLocalInputValue(round.endTime));
   const [duration, setDuration] = useState(round.durationMinutes);
-  const [selectedAddQId, setSelectedAddQId] = useState("");
+  const [codingSearchQuery, setCodingSearchQuery] = useState("");
+  const [newSectionTitle, setNewSectionTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -47,9 +56,15 @@ function RoundEditorCard({
     .map((id) => qMap.get(id))
     .filter((q): q is Question => Boolean(q));
 
-  const availableToAdd = questionBank.filter(
-    (q) => q.kind === round.type && !round.questionIds.includes(q.id)
+  const availableCodingToAdd = questionBank.filter(
+    (q) => q.kind === "coding" && !round.questionIds.includes(q.id)
   );
+  const matchingCodingResults = codingSearchQuery.trim()
+    ? availableCodingToAdd.filter((q) => {
+        const term = codingSearchQuery.trim().toLowerCase();
+        return getQuestionSummary(q, 140).toLowerCase().includes(term);
+      })
+    : [];
 
   const patchRound = async (payload: Record<string, unknown>, msg?: string) => {
     setBusy(true);
@@ -232,110 +247,301 @@ function RoundEditorCard({
         </div>
       </div>
 
-      {/* Questions in Round */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A]">
-            Assigned Questions ({assignedQuestions.length})
-          </h4>
+      {/* Questions / Sections in Round */}
+      {round.type === "mcq" ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A] flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-[#CA8A04]" />
+              MCQ Sections ({round.sections?.length ?? 0}) • {assignedQuestions.length} Questions
+            </h4>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={selectedAddQId}
-              onChange={(e) => setSelectedAddQId(e.target.value)}
-              className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] max-w-xs focus:border-[#CA8A04] focus:outline-none"
-            >
-              <option value="">
-                {availableToAdd.length > 0
-                  ? `Select ${round.type.toUpperCase()} question from bank...`
-                  : `All ${round.type.toUpperCase()} bank questions added`}
-              </option>
-              {availableToAdd.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.title} ({q.difficulty} • {q.points} pts)
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              disabled={busy || !selectedAddQId}
-              onClick={async () => {
-                if (!selectedAddQId) return;
-                await patchRound(
-                  { action: "add_question", questionId: selectedAddQId },
-                  "Question added to round."
-                );
-                setSelectedAddQId("");
-              }}
-              className="rounded-[4px] border border-[#22C55E]/40 bg-[#22C55E]/15 px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#22C55E] hover:bg-[#22C55E]/25 disabled:opacity-40 cursor-pointer"
-            >
-              + Add Selected
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                round.type === "mcq"
-                  ? onOpenNewMcq(round.id)
-                  : onOpenNewCoding(round.id)
-              }
-              className="rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors cursor-pointer"
-            >
-              + Create New {round.type === "mcq" ? "MCQ" : "DSL Coding"} Question
-            </button>
-          </div>
-        </div>
-
-        {assignedQuestions.length === 0 ? (
-          <div className="rounded-[4px] border border-dashed border-[#462E22] p-4 text-center font-spectral text-xs text-[#BFA98A]">
-            No questions in this round yet. Add one from the bank or create a new question above.
-          </div>
-        ) : (
-          <div className="divide-y divide-[#462E22] rounded-[4px] border border-[#462E22] bg-[#110A07]">
-            {assignedQuestions.map((q, idx) => (
-              <div
-                key={q.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={newSectionTitle}
+                onChange={(e) => setNewSectionTitle(e.target.value)}
+                placeholder="New Section Title (e.g. Section C: Math)"
+                className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none w-56"
+              />
+              <button
+                type="button"
+                disabled={busy || !newSectionTitle.trim()}
+                onClick={async () => {
+                  const title = newSectionTitle.trim();
+                  if (!title) return;
+                  await patchRound(
+                    { action: "add_section", sectionTitle: title },
+                    `Added section "${title}".`
+                  );
+                  setNewSectionTitle("");
+                }}
+                className="inline-flex items-center gap-1 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] disabled:opacity-40 cursor-pointer"
               >
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="font-fira text-xs text-[#BFA98A]">
-                    Q{idx + 1}.
-                  </span>
-                  <span className="font-cinzel text-sm font-semibold text-[#F5E6D3]">
-                    {q.title}
-                  </span>
-                  <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2 py-0.5 font-cinzel text-[10px] font-semibold uppercase text-[#BFA98A]">
-                    {q.difficulty}
-                  </span>
-                  <span className="font-fira text-xs text-[#22C55E]">
-                    {q.points} pts
-                  </span>
-                  {q.kind === "coding" && q.useDslStubs && (
-                    <span className="rounded-[2px] border border-[#581C87] bg-[#581C87]/25 px-1.5 py-0.5 font-fira text-[10px] text-[#F5E6D3]">
-                      DSL Stubs (C/C++/Java/Py)
-                    </span>
-                  )}
-                </div>
+                <Plus className="h-3 w-3" /> Add Section
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenNewMcq(round.id, round.sections?.[0]?.id)}
+                className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
+              >
+                + Create MCQ Set
+              </button>
+            </div>
+          </div>
 
+          {(!round.sections || round.sections.length === 0) && assignedQuestions.length === 0 ? (
+            <div className="rounded-[4px] border border-dashed border-[#462E22] p-4 text-center font-spectral text-xs text-[#BFA98A]">
+              No sections created yet. Add a section above and create a set of MCQs under it.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(round.sections && round.sections.length > 0
+                ? round.sections
+                : [
+                    {
+                      id: "default-sec",
+                      title: "All Questions",
+                      questionIds: round.questionIds,
+                    },
+                  ]
+              ).map((sec) => {
+                const secQuestions = sec.questionIds
+                  .map((id) => qMap.get(id))
+                  .filter((q): q is Question => Boolean(q));
+
+                return (
+                  <div
+                    key={sec.id}
+                    className="rounded-[4px] border border-[#462E22] bg-[#110A07] overflow-hidden"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#462E22] bg-[#160C08] px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-cinzel text-xs font-bold text-[#CA8A04]">
+                          {sec.title}
+                        </span>
+                        <span className="rounded-[2px] border border-[#462E22] bg-[#110A07] px-2 py-0.5 font-fira text-[10px] text-[#BFA98A]">
+                          {secQuestions.length} MCQ{secQuestions.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onOpenNewMcq(
+                              round.id,
+                              sec.id === "default-sec" ? undefined : sec.id
+                            )
+                          }
+                          className="rounded-[4px] border border-[#CA8A04]/50 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase text-[#CA8A04] hover:border-[#DAA520] cursor-pointer"
+                        >
+                          + Add MCQ Set
+                        </button>
+                        {sec.id !== "default-sec" && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              patchRound(
+                                { action: "delete_section", sectionId: sec.id },
+                                `Deleted section "${sec.title}".`
+                              )
+                            }
+                            title="Delete section"
+                            className="rounded-[4px] border border-[#B91C1C]/60 bg-[#991B1B]/15 p-1 text-[#FCA5A5] hover:bg-[#991B1B]/30 cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {secQuestions.length === 0 ? (
+                      <div className="p-3 text-center font-spectral text-xs text-[#BFA98A]/70">
+                        No MCQs in this section yet. Click &ldquo;+ Add MCQ Set&rdquo; to create questions here.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[#462E22]/60">
+                        {secQuestions.map((q, idx) => (
+                          <div
+                            key={q.id}
+                            className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
+                          >
+                            <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2.5">
+                              <span className="font-fira text-xs font-bold text-[#CA8A04]">
+                                Q{idx + 1}.
+                              </span>
+                              <span className="font-spectral text-sm text-[#F5E6D3] line-clamp-1">
+                                <LatexText text={q.kind === "mcq" ? q.prompt : q.title} />
+                              </span>
+                              <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2 py-0.5 font-cinzel text-[10px] font-semibold uppercase text-[#BFA98A]">
+                                {q.difficulty}
+                              </span>
+                              <span className="font-fira text-xs text-[#22C55E]">
+                                {q.points} pts
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                patchRound(
+                                  { action: "remove_question", questionId: q.id },
+                                  "Removed MCQ from section."
+                                )
+                              }
+                              className="rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#FCA5A5] hover:bg-[#991B1B]/35 cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h4 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#BFA98A]">
+              Contest Coding Problems ({assignedQuestions.length})
+            </h4>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative w-72 sm:w-80">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#CA8A04]" />
+                <input
+                  value={codingSearchQuery}
+                  onChange={(e) => setCodingSearchQuery(e.target.value)}
+                  placeholder="Search coding question bank to add..."
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] pl-8 pr-3 py-1.5 font-spectral text-xs text-[#F5E6D3] placeholder:text-[#BFA98A]/70 focus:border-[#CA8A04] focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onOpenNewCoding(round.id)}
+                className="rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors cursor-pointer"
+              >
+                + Create New DSL Coding Question
+              </button>
+            </div>
+          </div>
+
+          {/* Search Results from Coding Question Bank */}
+          {codingSearchQuery.trim() && (
+            <div className="rounded-[4px] border border-[#CA8A04]/50 bg-[#160C08] p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-cinzel text-[10px] font-bold uppercase tracking-[0.8px] text-[#CA8A04]">
+                  Question Bank Matches ({matchingCodingResults.length})
+                </span>
                 <button
                   type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    patchRound(
-                      { action: "remove_question", questionId: q.id },
-                      `Removed "${q.title}" from round.`
-                    )
-                  }
-                  className="rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#FCA5A5] hover:bg-[#991B1B]/35 cursor-pointer"
+                  onClick={() => setCodingSearchQuery("")}
+                  className="font-cinzel text-[10px] uppercase text-[#BFA98A] hover:text-[#F5E6D3] cursor-pointer"
                 >
-                  Remove
+                  Clear Search
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {matchingCodingResults.length === 0 ? (
+                <div className="py-2 font-spectral text-xs text-[#BFA98A]">
+                  No unassigned coding questions in the bank match &ldquo;{codingSearchQuery}&rdquo;.
+                </div>
+              ) : (
+                <div className="divide-y divide-[#462E22]/60 rounded-[4px] border border-[#462E22] bg-[#110A07]">
+                  {matchingCodingResults.map((q) => (
+                    <div
+                      key={q.id}
+                      className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-cinzel text-xs font-semibold text-[#F5E6D3]">
+                          {getQuestionSummary(q)}
+                        </span>
+                        <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-1.5 py-0.5 font-cinzel text-[10px] uppercase text-[#BFA98A]">
+                          {q.difficulty}
+                        </span>
+                        <span className="font-fira text-xs text-[#22C55E]">
+                          {q.points} pts
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={async () => {
+                          await patchRound(
+                            { action: "add_question", questionId: q.id },
+                            `Added "${getQuestionSummary(q)}" to round.`
+                          );
+                          setCodingSearchQuery("");
+                        }}
+                        className="rounded-[4px] border border-[#22C55E]/40 bg-[#22C55E]/15 px-2.5 py-1 font-cinzel text-[10px] font-bold uppercase text-[#22C55E] hover:bg-[#22C55E]/25 disabled:opacity-40 cursor-pointer"
+                      >
+                        + Add to Round
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {assignedQuestions.length === 0 ? (
+            <div className="rounded-[4px] border border-dashed border-[#462E22] p-4 text-center font-spectral text-xs text-[#BFA98A]">
+              No coding questions in this round yet. Search the Question Bank above to add a question.
+            </div>
+          ) : (
+            <div className="divide-y divide-[#462E22] rounded-[4px] border border-[#462E22] bg-[#110A07]">
+              {assignedQuestions.map((q, idx) => (
+                <div
+                  key={q.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
+                >
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="font-fira text-xs text-[#BFA98A]">
+                      Q{idx + 1}.
+                    </span>
+                    <span className="font-cinzel text-sm font-semibold text-[#F5E6D3]">
+                      {getQuestionSummary(q)}
+                    </span>
+                    <span className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2 py-0.5 font-cinzel text-[10px] font-semibold uppercase text-[#BFA98A]">
+                      {q.difficulty}
+                    </span>
+                    <span className="font-fira text-xs text-[#22C55E]">
+                      {q.points} pts
+                    </span>
+                    {q.kind === "coding" && q.useDslStubs && (
+                      <span className="rounded-[2px] border border-[#581C87] bg-[#581C87]/25 px-1.5 py-0.5 font-fira text-[10px] text-[#F5E6D3]">
+                        DSL Stubs (C/C++/Java/Py)
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      patchRound(
+                        { action: "remove_question", questionId: q.id },
+                        `Removed "${getQuestionSummary(q)}" from round.`
+                      )
+                    }
+                    className="rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#FCA5A5] hover:bg-[#991B1B]/35 cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {notice && (
         <div className="rounded-[4px] border border-[#22C55E]/40 bg-[#22C55E]/10 px-3 py-2 font-spectral text-xs font-medium text-[#22C55E]">
@@ -351,11 +557,30 @@ function ModeratorContent() {
   const { currentUser, loading: authLoading } = useUser();
 
   const initialContestId = searchParams.get("contestId") || "";
-  const initialTab = searchParams.get("tab");
+  const rawUrlTab = searchParams.get("tab");
+  const normalizedUrlTab: "rounds" | "bank" | "submissions" | "leaderboard" =
+    rawUrlTab === "bank" || rawUrlTab === "dsl"
+      ? "bank"
+      : rawUrlTab === "submissions"
+      ? "submissions"
+      : rawUrlTab === "leaderboard"
+      ? "leaderboard"
+      : "rounds";
 
-  const [tab, setTab] = useState<"rounds" | "dsl" | "leaderboard">(
-    initialTab === "dsl" || initialTab === "leaderboard" ? initialTab : "rounds"
-  );
+  const [tabOverride, setTabOverride] = useState<{
+    forUrlTab: string | null;
+    value: "rounds" | "bank" | "submissions" | "leaderboard";
+  } | null>(null);
+
+  const tab =
+    tabOverride && tabOverride.forUrlTab === rawUrlTab
+      ? tabOverride.value
+      : normalizedUrlTab;
+
+  const setTab = (next: "rounds" | "bank" | "submissions" | "leaderboard") => {
+    setTabOverride({ forUrlTab: rawUrlTab, value: next });
+  };
+
   const [contests, setContests] = useState<Contest[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedContestId, setSelectedContestId] = useState(initialContestId);
@@ -375,7 +600,11 @@ function ModeratorContent() {
   const [newRoundType, setNewRoundType] = useState<"mcq" | "coding">("coding");
   const [newRoundDuration, setNewRoundDuration] = useState(60);
 
-  const [mcqModalRoundId, setMcqModalRoundId] = useState<string | null>(null);
+  const [mcqModalTarget, setMcqModalTarget] = useState<{
+    contestId?: string;
+    roundId?: string;
+    sectionId?: string;
+  } | null>(null);
   const [dslTargetRoundId, setDslTargetRoundId] = useState<string>("");
 
   const loadAll = useCallback(async () => {
@@ -436,6 +665,8 @@ function ModeratorContent() {
         strictMode: newContestStrict,
         organizerId: currentUser.id,
         organizerName: currentUser.name,
+        initialMcqQuestionIds: [],
+        initialCodingQuestionIds: [],
       }),
     });
     if (res.ok) {
@@ -486,6 +717,7 @@ function ModeratorContent() {
         roundDescription: newRoundDesc,
         type: newRoundType,
         durationMinutes: newRoundDuration,
+        questionIds: [],
       }),
     });
     if (res.ok) {
@@ -622,16 +854,19 @@ function ModeratorContent() {
         </div>
 
         <div className="flex flex-wrap items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] p-1">
-          {[
-            { id: "rounds", label: "Rounds & Schedules" },
-            { id: "dsl", label: "DSL Code Stubs Studio" },
-            { id: "leaderboard", label: "Moderator Leaderboard" },
-          ].map((item) => (
+          {(
+            [
+              { id: "rounds", label: "Rounds & Schedules" },
+              { id: "bank", label: "Question Bank" },
+              { id: "submissions", label: "Code Submissions" },
+              { id: "leaderboard", label: "Leaderboard" },
+            ] as const
+          ).map((item) => (
             <button
               key={item.id}
               type="button"
-              onClick={() => setTab(item.id as "rounds" | "dsl" | "leaderboard")}
-              className={`rounded-[2px] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
+              onClick={() => setTab(item.id)}
+              className={`rounded-[2px] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
                 tab === item.id
                   ? "bg-[#CA8A04] text-[#110A07]"
                   : "text-[#BFA98A] hover:text-[#F5E6D3]"
@@ -687,10 +922,16 @@ function ModeratorContent() {
                         loadAll();
                         setRefreshTick((t) => t + 1);
                       }}
-                      onOpenNewMcq={(rId) => setMcqModalRoundId(rId)}
+                      onOpenNewMcq={(rId, secId) =>
+                        setMcqModalTarget({
+                          contestId: activeContest.id,
+                          roundId: rId,
+                          sectionId: secId,
+                        })
+                      }
                       onOpenNewCoding={(rId) => {
                         setDslTargetRoundId(rId);
-                        setTab("dsl");
+                        setTab("bank");
                       }}
                     />
                   ))}
@@ -698,16 +939,23 @@ function ModeratorContent() {
             )}
           </div>
         ) : null
-      ) : tab === "dsl" ? (
-        <DslQuestionStudio
-          contests={contests}
-          defaultContestId={activeContest?.id}
+      ) : tab === "bank" ? (
+        <PlatformQuestionBank
+          questions={questions}
+          activeContestId={activeContest?.id}
           defaultRoundId={dslTargetRoundId}
-          onCreated={() => {
+          onUpdated={() => {
             loadAll();
             setRefreshTick((t) => t + 1);
           }}
         />
+      ) : tab === "submissions" ? (
+        activeContest ? (
+          <ModeratorSubmissionsFeed
+            contest={activeContest}
+            questions={questions}
+          />
+        ) : null
       ) : activeContest ? (
         <LeaderboardPanel
           contestId={activeContest.id}
@@ -717,49 +965,52 @@ function ModeratorContent() {
         />
       ) : null}
 
-      {/* New Contest Modal */}
+      {/* New Contest Modal (with Platform Question Bank Reuse) */}
       {showNewContest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
+          <div className="w-full max-w-xl rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4 max-h-[88vh] overflow-y-auto">
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
               Create New Contest
             </h3>
-            <form onSubmit={handleCreateContest} className="space-y-3">
-              <div>
-                <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
-                  Contest Title
-                </label>
-                <input
-                  required
-                  value={newContestTitle}
-                  onChange={(e) => setNewContestTitle(e.target.value)}
-                  placeholder="e.g., Winter CodeFest 2026"
-                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
-                  Custom Joining Code (optional)
-                </label>
-                <input
-                  value={newContestJoinCode}
-                  onChange={(e) => setNewContestJoinCode(e.target.value.toUpperCase())}
-                  placeholder="e.g., WINTER-26"
-                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
-                />
+            <form onSubmit={handleCreateContest} className="space-y-3.5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    Contest Title
+                  </label>
+                  <input
+                    required
+                    value={newContestTitle}
+                    onChange={(e) => setNewContestTitle(e.target.value)}
+                    placeholder="e.g., Winter CodeFest 2026"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    Custom Joining Code (optional)
+                  </label>
+                  <input
+                    value={newContestJoinCode}
+                    onChange={(e) => setNewContestJoinCode(e.target.value.toUpperCase())}
+                    placeholder="e.g., WINTER-26"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
                   Description
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={newContestDesc}
                   onChange={(e) => setNewContestDesc(e.target.value)}
                   placeholder="Describe rounds and rules..."
                   className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
+
               <label className="flex items-center gap-2 rounded-[4px] border border-[#581C87] bg-[#110A07] p-3 text-xs text-[#F5E6D3] cursor-pointer">
                 <input
                   type="checkbox"
@@ -794,10 +1045,10 @@ function ModeratorContent() {
         </div>
       )}
 
-      {/* New Round Modal */}
+      {/* New Round Modal (with Platform Question Bank Reuse) */}
       {showNewRound && activeContest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
+          <div className="w-full max-w-lg rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4 max-h-[85vh] overflow-y-auto">
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
               Add Round to {activeContest.title}
             </h3>
@@ -808,7 +1059,9 @@ function ModeratorContent() {
                 </label>
                 <select
                   value={newRoundType}
-                  onChange={(e) => setNewRoundType(e.target.value as "mcq" | "coding")}
+                  onChange={(e) => {
+                    setNewRoundType(e.target.value as "mcq" | "coding");
+                  }}
                   className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 >
                   <option value="mcq">MCQ Round (Objective Questions)</option>
@@ -850,6 +1103,7 @@ function ModeratorContent() {
                   className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -870,11 +1124,18 @@ function ModeratorContent() {
         </div>
       )}
 
-      {mcqModalRoundId && activeContest && (
+      {mcqModalTarget && (
         <McqQuestionModal
-          contestId={activeContest.id}
-          roundId={mcqModalRoundId}
-          onClose={() => setMcqModalRoundId(null)}
+          contestId={mcqModalTarget.contestId}
+          roundId={mcqModalTarget.roundId}
+          sections={
+            mcqModalTarget.roundId
+              ? activeContest?.rounds.find((r) => r.id === mcqModalTarget.roundId)
+                  ?.sections ?? []
+              : []
+          }
+          defaultSectionId={mcqModalTarget.sectionId}
+          onClose={() => setMcqModalTarget(null)}
           onSaved={() => {
             loadAll();
             setRefreshTick((t) => t + 1);

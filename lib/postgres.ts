@@ -3,11 +3,16 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { sql } from "drizzle-orm";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { hashPassword } from "./auth";
+import * as schema from "./schema";
 import { getInitialSeedData } from "./seed";
 
 const execAsync = promisify(execCb);
+
+export type DrizzleDb = NodePgDatabase<typeof schema>;
 
 const PG_PORT = Number(process.env.PG_LOCAL_PORT || 5433);
 const PG_USER = process.env.PG_LOCAL_USER || os.userInfo().username || "postgres";
@@ -16,7 +21,8 @@ const PG_DATA_DIR = path.join(process.cwd(), ".pgdata");
 
 const globalForPg = globalThis as unknown as {
   __turecodePool?: Pool;
-  __turecodeInitPromise?: Promise<Pool>;
+  __turecodeDrizzle?: DrizzleDb;
+  __turecodeInitPromise?: Promise<DrizzleDb>;
 };
 
 function getConnectionString(dbName = PG_DB): string {
@@ -73,7 +79,6 @@ async function startLocalPostgresIfNeeded(): Promise<void> {
     );
   }
 
-  // Ensure target database exists
   const adminPool = new Pool({ connectionString: adminConn, max: 1 });
   try {
     const res = await adminPool.query(
@@ -89,7 +94,7 @@ async function startLocalPostgresIfNeeded(): Promise<void> {
   }
 }
 
-async function runMigrationsAndSeed(pool: Pool): Promise<void> {
+async function runMigrationsAndSeed(pool: Pool, db: DrizzleDb): Promise<void> {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -139,6 +144,26 @@ async function runMigrationsAndSeed(pool: Pool): Promise<void> {
       PRIMARY KEY (contest_id, user_id)
     );
 
+    CREATE TABLE IF NOT EXISTS question_attempts (
+      contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+      round_id TEXT NOT NULL,
+      question_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (contest_id, round_id, question_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS score_overrides (
+      contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+      round_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      override_score INTEGER NOT NULL,
+      reason TEXT NOT NULL DEFAULT '',
+      updated_by TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (contest_id, round_id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS contest_enrollments (
       contest_id TEXT NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -155,8 +180,11 @@ async function runMigrationsAndSeed(pool: Pool): Promise<void> {
       selected_option_id TEXT NOT NULL,
       is_correct BOOLEAN NOT NULL,
       score INTEGER NOT NULL,
+      time_taken_seconds INTEGER NOT NULL DEFAULT 0,
       submitted_at TIMESTAMPTZ NOT NULL
     );
+
+    ALTER TABLE mcq_submissions ADD COLUMN IF NOT EXISTS time_taken_seconds INTEGER NOT NULL DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS coding_submissions (
       id TEXT PRIMARY KEY,
@@ -173,31 +201,79 @@ async function runMigrationsAndSeed(pool: Pool): Promise<void> {
       passed_count INTEGER NOT NULL,
       total_count INTEGER NOT NULL,
       execution_time_ms DOUBLE PRECISION NOT NULL,
+      time_taken_seconds INTEGER NOT NULL DEFAULT 0,
       run_id TEXT NOT NULL,
       compile_error TEXT,
       test_case_results JSONB NOT NULL,
       submitted_at TIMESTAMPTZ NOT NULL
     );
+
+    ALTER TABLE coding_submissions ADD COLUMN IF NOT EXISTS time_taken_seconds INTEGER NOT NULL DEFAULT 0;
   `);
 
-  const countRes = await pool.query<{ cnt: number }>(
-    "SELECT COUNT(*)::int AS cnt FROM users"
-  );
-  if ((countRes.rows[0]?.cnt ?? 0) > 0) {
-    // Ensure seeded sample explanations exist on existing DBs
+  const countRows = await db
+    .select({ cnt: sql<number>`COUNT(*)::int` })
+    .from(schema.users);
+
+  if ((countRows[0]?.cnt ?? 0) > 0) {
     const seed = getInitialSeedData();
     for (const q of seed.questions) {
       if (q.kind === "coding") {
-        await pool.query(
-          `UPDATE questions
-           SET data = $2::jsonb
-           WHERE id = $1
-             AND NOT EXISTS (
-               SELECT 1 FROM jsonb_array_elements(data->'testCases') tc
-               WHERE tc->>'explanation' IS NOT NULL
-             )`,
-          [q.id, JSON.stringify(q)]
-        ).catch(() => undefined);
+        await db
+          .execute(
+            sql`UPDATE questions
+                SET data = ${JSON.stringify(q)}::jsonb
+                WHERE id = ${q.id}
+                  AND NOT EXISTS (
+                    SELECT 1 FROM jsonb_array_elements(data->'testCases') tc
+                    WHERE tc->>'explanation' IS NOT NULL
+                  )`
+          )
+          .catch(() => undefined);
+      } else {
+        await db
+          .execute(
+            sql`UPDATE questions
+                SET data = ${JSON.stringify(q)}::jsonb
+                WHERE id = ${q.id}
+                  AND data ? 'title'`
+          )
+          .catch(() => undefined);
+      }
+    }
+
+    for (const c of seed.contests) {
+      await db
+        .execute(
+          sql`UPDATE contests
+              SET rounds = ${JSON.stringify(c.rounds)}::jsonb
+              WHERE id = ${c.id}
+                AND NOT EXISTS (
+                  SELECT 1 FROM jsonb_array_elements(rounds) r
+                  WHERE r->>'type' = 'mcq' AND r ? 'sections'
+                )`
+        )
+        .catch(() => undefined);
+    }
+
+    for (const m of seed.mcqSubmissions) {
+      if (m.timeTakenSeconds) {
+        await db
+          .execute(
+            sql`UPDATE mcq_submissions SET time_taken_seconds = ${m.timeTakenSeconds}
+                WHERE id = ${m.id} AND time_taken_seconds = 0`
+          )
+          .catch(() => undefined);
+      }
+    }
+    for (const s of seed.codingSubmissions) {
+      if (s.timeTakenSeconds) {
+        await db
+          .execute(
+            sql`UPDATE coding_submissions SET time_taken_seconds = ${s.timeTakenSeconds}
+                WHERE id = ${s.id} AND time_taken_seconds = 0`
+          )
+          .catch(() => undefined);
       }
     }
     return;
@@ -206,116 +282,124 @@ async function runMigrationsAndSeed(pool: Pool): Promise<void> {
   const seed = getInitialSeedData();
   const defaultPasswordHash = hashPassword("password123");
 
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-
-    for (const u of seed.users) {
-      await client.query(
-        `INSERT INTO users (id, name, handle, email, password_hash, role)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (id) DO NOTHING`,
-        [u.id, u.name, u.handle, u.email.toLowerCase(), defaultPasswordHash, u.role]
-      );
+  await db.transaction(async (tx) => {
+    if (seed.users.length > 0) {
+      await tx
+        .insert(schema.users)
+        .values(
+          seed.users.map((u) => ({
+            id: u.id,
+            name: u.name,
+            handle: u.handle,
+            email: u.email.toLowerCase(),
+            passwordHash: defaultPasswordHash,
+            role: u.role,
+          }))
+        )
+        .onConflictDoNothing();
     }
 
-    for (const q of seed.questions) {
-      await client.query(
-        `INSERT INTO questions (id, kind, data)
-         VALUES ($1, $2, $3::jsonb)
-         ON CONFLICT (id) DO NOTHING`,
-        [q.id, q.kind, JSON.stringify(q)]
-      );
+    if (seed.questions.length > 0) {
+      await tx
+        .insert(schema.questions)
+        .values(
+          seed.questions.map((q) => ({
+            id: q.id,
+            kind: q.kind,
+            data: q,
+          }))
+        )
+        .onConflictDoNothing();
     }
 
-    for (const c of seed.contests) {
-      await client.query(
-        `INSERT INTO contests (id, title, slug, join_code, strict_mode, description, organizer_id, organizer_name, created_at, rounds)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
-         ON CONFLICT (id) DO NOTHING`,
-        [
-          c.id,
-          c.title,
-          c.slug,
-          c.joinCode,
-          c.strictMode,
-          c.description,
-          c.organizerId,
-          c.organizerName,
-          c.createdAt,
-          JSON.stringify(c.rounds),
-        ]
-      );
+    if (seed.contests.length > 0) {
+      await tx
+        .insert(schema.contests)
+        .values(
+          seed.contests.map((c) => ({
+            id: c.id,
+            title: c.title,
+            slug: c.slug,
+            joinCode: c.joinCode,
+            strictMode: c.strictMode,
+            description: c.description,
+            organizerId: c.organizerId,
+            organizerName: c.organizerName,
+            createdAt: new Date(c.createdAt),
+            rounds: c.rounds,
+          }))
+        )
+        .onConflictDoNothing();
     }
 
-    for (const enr of seed.contestEnrollments) {
-      await client.query(
-        `INSERT INTO contest_enrollments (contest_id, user_id, joined_at)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (contest_id, user_id) DO NOTHING`,
-        [enr.contestId, enr.userId, enr.joinedAt]
-      );
+    if (seed.contestEnrollments.length > 0) {
+      await tx
+        .insert(schema.contestEnrollments)
+        .values(
+          seed.contestEnrollments.map((enr) => ({
+            contestId: enr.contestId,
+            userId: enr.userId,
+            joinedAt: new Date(enr.joinedAt),
+          }))
+        )
+        .onConflictDoNothing();
     }
 
-    for (const m of seed.mcqSubmissions) {
-      await client.query(
-        `INSERT INTO mcq_submissions (id, contest_id, round_id, question_id, user_id, selected_option_id, is_correct, score, submitted_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         ON CONFLICT (id) DO NOTHING`,
-        [
-          m.id,
-          m.contestId,
-          m.roundId,
-          m.questionId,
-          m.userId,
-          m.selectedOptionId,
-          m.isCorrect,
-          m.score,
-          m.submittedAt,
-        ]
-      );
+    if (seed.mcqSubmissions.length > 0) {
+      await tx
+        .insert(schema.mcqSubmissions)
+        .values(
+          seed.mcqSubmissions.map((m) => ({
+            id: m.id,
+            contestId: m.contestId,
+            roundId: m.roundId,
+            questionId: m.questionId,
+            userId: m.userId,
+            selectedOptionId: m.selectedOptionId,
+            isCorrect: m.isCorrect,
+            score: m.score,
+            timeTakenSeconds: m.timeTakenSeconds ?? 0,
+            submittedAt: new Date(m.submittedAt),
+          }))
+        )
+        .onConflictDoNothing();
     }
 
-    for (const s of seed.codingSubmissions) {
-      await client.query(
-        `INSERT INTO coding_submissions (id, contest_id, round_id, question_id, user_id, language, source_code, full_source_code, status, score, max_score, passed_count, total_count, execution_time_ms, run_id, compile_error, test_case_results, submitted_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18)
-         ON CONFLICT (id) DO NOTHING`,
-        [
-          s.id,
-          s.contestId,
-          s.roundId,
-          s.questionId,
-          s.userId,
-          s.language,
-          s.sourceCode,
-          s.fullSourceCode,
-          s.status,
-          s.score,
-          s.maxScore,
-          s.passedCount,
-          s.totalCount,
-          s.executionTimeMs,
-          s.runId,
-          s.compileError ?? null,
-          JSON.stringify(s.testCaseResults),
-          s.submittedAt,
-        ]
-      );
+    if (seed.codingSubmissions.length > 0) {
+      await tx
+        .insert(schema.codingSubmissions)
+        .values(
+          seed.codingSubmissions.map((s) => ({
+            id: s.id,
+            contestId: s.contestId,
+            roundId: s.roundId,
+            questionId: s.questionId,
+            userId: s.userId,
+            language: s.language,
+            sourceCode: s.sourceCode,
+            fullSourceCode: s.fullSourceCode,
+            status: s.status,
+            score: s.score,
+            maxScore: s.maxScore,
+            passedCount: s.passedCount,
+            totalCount: s.totalCount,
+            executionTimeMs: s.executionTimeMs,
+            timeTakenSeconds: s.timeTakenSeconds ?? 0,
+            runId: s.runId,
+            compileError: s.compileError ?? null,
+            testCaseResults: s.testCaseResults,
+            submittedAt: new Date(s.submittedAt),
+          }))
+        )
+        .onConflictDoNothing();
     }
-
-    await client.query("COMMIT");
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
-  } finally {
-    client.release();
-  }
+  });
 }
 
-export async function getPool(): Promise<Pool> {
-  if (globalForPg.__turecodePool) {
-    return globalForPg.__turecodePool;
+/** Returns the singleton Drizzle ORM database adapter backed by PostgreSQL. */
+export async function getDb(): Promise<DrizzleDb> {
+  if (globalForPg.__turecodeDrizzle) {
+    return globalForPg.__turecodeDrizzle;
   }
   if (!globalForPg.__turecodeInitPromise) {
     globalForPg.__turecodeInitPromise = (async () => {
@@ -324,13 +408,32 @@ export async function getPool(): Promise<Pool> {
         connectionString: getConnectionString(),
         max: 15,
       });
-      await runMigrationsAndSeed(pool);
+      const db = drizzle(pool, { schema });
+      await runMigrationsAndSeed(pool, db);
       globalForPg.__turecodePool = pool;
-      return pool;
+      globalForPg.__turecodeDrizzle = db;
+      return db;
     })().catch((err) => {
       globalForPg.__turecodeInitPromise = undefined;
       throw err;
     });
   }
   return globalForPg.__turecodeInitPromise;
+}
+
+/** Returns the underlying pg Pool after ensuring initialization completes. */
+export async function getPool(): Promise<Pool> {
+  await getDb();
+  return globalForPg.__turecodePool!;
+}
+
+/** Closes the singleton PostgreSQL pool (used by CLI maintenance scripts). */
+export async function closeDb(): Promise<void> {
+  const pool = globalForPg.__turecodePool;
+  globalForPg.__turecodePool = undefined;
+  globalForPg.__turecodeDrizzle = undefined;
+  globalForPg.__turecodeInitPromise = undefined;
+  if (pool) {
+    await pool.end();
+  }
 }

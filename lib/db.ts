@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
-import type { PoolClient } from "pg";
+import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { hashPassword, verifyPassword } from "./auth";
-import { getPool } from "./postgres";
+import { type DrizzleDb, getDb } from "./postgres";
+import * as schema from "./schema";
 import type {
   CodingSubmission,
   Contest,
@@ -10,10 +11,13 @@ import type {
   LeaderboardEntry,
   MCQSubmission,
   Question,
-  Round,
+  QuestionAttempt,
+  ScoreOverride,
   User,
   UserRole,
 } from "./types";
+
+type DbOrTx = DrizzleDb | Parameters<Parameters<DrizzleDb["transaction"]>[0]>[0];
 
 export function generateJoinCode(prefix = "TC"): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -24,79 +28,52 @@ export function generateJoinCode(prefix = "TC"): string {
   return `${prefix}-${code}`;
 }
 
-async function fetchSnapshot(client: PoolClient): Promise<DatabaseSchema> {
-  const [usersRes, questionsRes, contestsRes, enrollmentsRes, mcqRes, codingRes] =
-    await Promise.all([
-      client.query<{
-        id: string;
-        name: string;
-        handle: string;
-        email: string;
-        role: UserRole;
-      }>("SELECT id, name, handle, email, role FROM users ORDER BY created_at ASC"),
-      client.query<{ data: Question }>(
-        "SELECT data FROM questions ORDER BY created_at ASC"
-      ),
-      client.query<{
-        id: string;
-        title: string;
-        slug: string;
-        join_code: string;
-        strict_mode: boolean;
-        description: string;
-        organizer_id: string;
-        organizer_name: string;
-        created_at: Date;
-        rounds: Round[];
-      }>(
-        "SELECT id, title, slug, join_code, strict_mode, description, organizer_id, organizer_name, created_at, rounds FROM contests ORDER BY created_at DESC"
-      ),
-      client.query<{
-        contest_id: string;
-        user_id: string;
-        joined_at: Date;
-      }>("SELECT contest_id, user_id, joined_at FROM contest_enrollments"),
-      client.query<{
-        id: string;
-        contest_id: string;
-        round_id: string;
-        question_id: string;
-        user_id: string;
-        selected_option_id: string;
-        is_correct: boolean;
-        score: number;
-        submitted_at: Date;
-      }>(
-        "SELECT id, contest_id, round_id, question_id, user_id, selected_option_id, is_correct, score, submitted_at FROM mcq_submissions ORDER BY submitted_at ASC"
-      ),
-      client.query<{
-        id: string;
-        contest_id: string;
-        round_id: string;
-        question_id: string;
-        user_id: string;
-        language: CodingSubmission["language"];
-        source_code: string;
-        full_source_code: string;
-        status: CodingSubmission["status"];
-        score: number;
-        max_score: number;
-        passed_count: number;
-        total_count: number;
-        execution_time_ms: number;
-        run_id: string;
-        compile_error: string | null;
-        test_case_results: CodingSubmission["testCaseResults"];
-        submitted_at: Date;
-      }>(
-        "SELECT id, contest_id, round_id, question_id, user_id, language, source_code, full_source_code, status, score, max_score, passed_count, total_count, execution_time_ms, run_id, compile_error, test_case_results, submitted_at FROM coding_submissions ORDER BY submitted_at ASC"
-      ),
-    ]);
+async function fetchSnapshot(db: DbOrTx): Promise<DatabaseSchema> {
+  const [
+    usersRows,
+    questionsRows,
+    contestsRows,
+    enrollmentsRows,
+    mcqRows,
+    codingRows,
+    attemptsRows,
+    overridesRows,
+  ] = await Promise.all([
+    db
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        handle: schema.users.handle,
+        email: schema.users.email,
+        role: schema.users.role,
+      })
+      .from(schema.users)
+      .orderBy(asc(schema.users.createdAt)),
+    db
+      .select({ data: schema.questions.data })
+      .from(schema.questions)
+      .orderBy(asc(schema.questions.createdAt)),
+    db
+      .select()
+      .from(schema.contests)
+      .orderBy(desc(schema.contests.createdAt)),
+    db.select().from(schema.contestEnrollments),
+    db
+      .select()
+      .from(schema.mcqSubmissions)
+      .orderBy(asc(schema.mcqSubmissions.submittedAt)),
+    db
+      .select()
+      .from(schema.codingSubmissions)
+      .orderBy(asc(schema.codingSubmissions.submittedAt)),
+    db.select().from(schema.questionAttempts),
+    db.select().from(schema.scoreOverrides),
+  ]);
 
-  const enrollments: ContestEnrollment[] = enrollmentsRes.rows.map((r) => ({
-    contestId: r.contest_id,
-    userId: r.user_id,
-    joinedAt: new Date(r.joined_at).toISOString(),
+  const enrollments: ContestEnrollment[] = enrollmentsRows.map((r) => ({
+    contestId: r.contestId,
+    userId: r.userId,
+    joinedAt: r.joinedAt.toISOString(),
   }));
 
   const enrolledByContest = new Map<string, string[]>();
@@ -106,236 +83,250 @@ async function fetchSnapshot(client: PoolClient): Promise<DatabaseSchema> {
     enrolledByContest.set(e.contestId, arr);
   }
 
-  const contests: Contest[] = contestsRes.rows.map((r) => ({
+  const contests: Contest[] = contestsRows.map((r) => ({
     id: r.id,
     title: r.title,
     slug: r.slug,
-    joinCode: r.join_code,
-    strictMode: Boolean(r.strict_mode),
+    joinCode: r.joinCode,
+    strictMode: Boolean(r.strictMode),
     description: r.description,
-    organizerId: r.organizer_id,
-    organizerName: r.organizer_name,
-    createdAt: new Date(r.created_at).toISOString(),
+    organizerId: r.organizerId,
+    organizerName: r.organizerName,
+    createdAt: r.createdAt.toISOString(),
     rounds: Array.isArray(r.rounds) ? r.rounds : [],
     enrolledUserIds: enrolledByContest.get(r.id) ?? [],
   }));
 
-  const mcqSubmissions: MCQSubmission[] = mcqRes.rows.map((r) => ({
+  const mcqSubmissions: MCQSubmission[] = mcqRows.map((r) => ({
     id: r.id,
-    contestId: r.contest_id,
-    roundId: r.round_id,
-    questionId: r.question_id,
-    userId: r.user_id,
-    selectedOptionId: r.selected_option_id,
-    isCorrect: r.is_correct,
+    contestId: r.contestId,
+    roundId: r.roundId,
+    questionId: r.questionId,
+    userId: r.userId,
+    selectedOptionId: r.selectedOptionId,
+    isCorrect: r.isCorrect,
     score: r.score,
-    submittedAt: new Date(r.submitted_at).toISOString(),
+    timeTakenSeconds: r.timeTakenSeconds ?? 0,
+    submittedAt: r.submittedAt.toISOString(),
   }));
 
-  const codingSubmissions: CodingSubmission[] = codingRes.rows.map((r) => ({
+  const codingSubmissions: CodingSubmission[] = codingRows.map((r) => ({
     id: r.id,
-    contestId: r.contest_id,
-    roundId: r.round_id,
-    questionId: r.question_id,
-    userId: r.user_id,
+    contestId: r.contestId,
+    roundId: r.roundId,
+    questionId: r.questionId,
+    userId: r.userId,
     language: r.language,
-    sourceCode: r.source_code,
-    fullSourceCode: r.full_source_code,
+    sourceCode: r.sourceCode,
+    fullSourceCode: r.fullSourceCode,
     status: r.status,
     score: r.score,
-    maxScore: r.max_score,
-    passedCount: r.passed_count,
-    totalCount: r.total_count,
-    executionTimeMs: r.execution_time_ms,
-    runId: r.run_id,
-    compileError: r.compile_error ?? undefined,
-    testCaseResults: Array.isArray(r.test_case_results) ? r.test_case_results : [],
-    submittedAt: new Date(r.submitted_at).toISOString(),
+    maxScore: r.maxScore,
+    passedCount: r.passedCount,
+    totalCount: r.totalCount,
+    executionTimeMs: r.executionTimeMs,
+    timeTakenSeconds: r.timeTakenSeconds ?? 0,
+    runId: r.runId,
+    compileError: r.compileError ?? undefined,
+    testCaseResults: Array.isArray(r.testCaseResults) ? r.testCaseResults : [],
+    submittedAt: r.submittedAt.toISOString(),
+  }));
+
+  const questionAttempts: QuestionAttempt[] = attemptsRows.map((r) => ({
+    contestId: r.contestId,
+    roundId: r.roundId,
+    questionId: r.questionId,
+    userId: r.userId,
+    startedAt: r.startedAt.toISOString(),
+  }));
+
+  const scoreOverrides: ScoreOverride[] = overridesRows.map((r) => ({
+    contestId: r.contestId,
+    roundId: r.roundId,
+    userId: r.userId,
+    overrideScore: r.overrideScore,
+    reason: r.reason,
+    updatedBy: r.updatedBy,
+    updatedAt: r.updatedAt.toISOString(),
   }));
 
   return {
-    users: usersRes.rows,
-    questions: questionsRes.rows.map((r) => r.data),
+    users: usersRows,
+    questions: questionsRows.map((r) => r.data),
     contests,
     contestEnrollments: enrollments,
     mcqSubmissions,
     codingSubmissions,
+    questionAttempts,
+    scoreOverrides,
   };
 }
 
 export async function readDb(): Promise<DatabaseSchema> {
-  const pool = await getPool();
-  const client = await pool.connect();
-  try {
-    return await fetchSnapshot(client);
-  } finally {
-    client.release();
-  }
+  const db = await getDb();
+  return fetchSnapshot(db);
 }
 
 export async function mutateDb<T>(
   mutator: (db: DatabaseSchema) => Promise<T> | T
 ): Promise<T> {
-  const pool = await getPool();
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    // Serialize read-modify-write safely across concurrent requests
-    await client.query("SELECT pg_advisory_xact_lock(948271)");
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(948271)`);
 
-    const db = await fetchSnapshot(client);
-    const prevQuestionIds = new Set(db.questions.map((q) => q.id));
-    const prevContestIds = new Set(db.contests.map((c) => c.id));
-    const prevMcqIds = new Set(db.mcqSubmissions.map((m) => m.id));
-    const prevCodingIds = new Set(db.codingSubmissions.map((c) => c.id));
+    const snapshot = await fetchSnapshot(tx);
+    const prevQuestionIds = new Set(snapshot.questions.map((q) => q.id));
+    const prevContestIds = new Set(snapshot.contests.map((c) => c.id));
+    const prevMcqIds = new Set(snapshot.mcqSubmissions.map((m) => m.id));
+    const prevCodingIds = new Set(snapshot.codingSubmissions.map((c) => c.id));
 
-    const result = await mutator(db);
+    const result = await mutator(snapshot);
 
     // Sync questions
-    const nextQuestionIds = new Set(db.questions.map((q) => q.id));
-    for (const oldId of prevQuestionIds) {
-      if (!nextQuestionIds.has(oldId)) {
-        await client.query("DELETE FROM questions WHERE id = $1", [oldId]);
-      }
+    const nextQuestionIds = new Set(snapshot.questions.map((q) => q.id));
+    const deletedQIds = [...prevQuestionIds].filter((id) => !nextQuestionIds.has(id));
+    if (deletedQIds.length > 0) {
+      await tx.delete(schema.questions).where(inArray(schema.questions.id, deletedQIds));
     }
-    for (const q of db.questions) {
-      await client.query(
-        `INSERT INTO questions (id, kind, data)
-         VALUES ($1, $2, $3::jsonb)
-         ON CONFLICT (id) DO UPDATE SET kind = EXCLUDED.kind, data = EXCLUDED.data`,
-        [q.id, q.kind, JSON.stringify(q)]
-      );
+    for (const q of snapshot.questions) {
+      await tx
+        .insert(schema.questions)
+        .values({ id: q.id, kind: q.kind, data: q })
+        .onConflictDoUpdate({
+          target: schema.questions.id,
+          set: { kind: q.kind, data: q },
+        });
     }
 
     // Sync contests
-    const nextContestIds = new Set(db.contests.map((c) => c.id));
-    for (const oldId of prevContestIds) {
-      if (!nextContestIds.has(oldId)) {
-        await client.query("DELETE FROM contests WHERE id = $1", [oldId]);
-      }
+    const nextContestIds = new Set(snapshot.contests.map((c) => c.id));
+    const deletedCIds = [...prevContestIds].filter((id) => !nextContestIds.has(id));
+    if (deletedCIds.length > 0) {
+      await tx.delete(schema.contests).where(inArray(schema.contests.id, deletedCIds));
     }
-    for (const c of db.contests) {
-      await client.query(
-        `INSERT INTO contests (id, title, slug, join_code, strict_mode, description, organizer_id, organizer_name, created_at, rounds)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
-         ON CONFLICT (id) DO UPDATE SET
-           title = EXCLUDED.title,
-           slug = EXCLUDED.slug,
-           join_code = EXCLUDED.join_code,
-           strict_mode = EXCLUDED.strict_mode,
-           description = EXCLUDED.description,
-           rounds = EXCLUDED.rounds`,
-        [
-          c.id,
-          c.title,
-          c.slug,
-          c.joinCode || generateJoinCode(),
-          Boolean(c.strictMode),
-          c.description,
-          c.organizerId,
-          c.organizerName,
-          c.createdAt,
-          JSON.stringify(c.rounds),
-        ]
-      );
+    for (const c of snapshot.contests) {
+      const joinCode = c.joinCode || generateJoinCode();
+      await tx
+        .insert(schema.contests)
+        .values({
+          id: c.id,
+          title: c.title,
+          slug: c.slug,
+          joinCode,
+          strictMode: Boolean(c.strictMode),
+          description: c.description,
+          organizerId: c.organizerId,
+          organizerName: c.organizerName,
+          createdAt: new Date(c.createdAt),
+          rounds: c.rounds,
+        })
+        .onConflictDoUpdate({
+          target: schema.contests.id,
+          set: {
+            title: c.title,
+            slug: c.slug,
+            joinCode,
+            strictMode: Boolean(c.strictMode),
+            description: c.description,
+            rounds: c.rounds,
+          },
+        });
     }
 
     // Sync MCQ submissions
-    const nextMcqIds = new Set(db.mcqSubmissions.map((m) => m.id));
-    for (const oldId of prevMcqIds) {
-      if (!nextMcqIds.has(oldId)) {
-        await client.query("DELETE FROM mcq_submissions WHERE id = $1", [oldId]);
-      }
+    const nextMcqIds = new Set(snapshot.mcqSubmissions.map((m) => m.id));
+    const deletedMcqIds = [...prevMcqIds].filter((id) => !nextMcqIds.has(id));
+    if (deletedMcqIds.length > 0) {
+      await tx
+        .delete(schema.mcqSubmissions)
+        .where(inArray(schema.mcqSubmissions.id, deletedMcqIds));
     }
-    for (const m of db.mcqSubmissions) {
-      if (!prevMcqIds.has(m.id)) {
-        await client.query(
-          `INSERT INTO mcq_submissions (id, contest_id, round_id, question_id, user_id, selected_option_id, is_correct, score, submitted_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-           ON CONFLICT (id) DO NOTHING`,
-          [
-            m.id,
-            m.contestId,
-            m.roundId,
-            m.questionId,
-            m.userId,
-            m.selectedOptionId,
-            m.isCorrect,
-            m.score,
-            m.submittedAt,
-          ]
-        );
-      }
+    const newMcqs = snapshot.mcqSubmissions.filter((m) => !prevMcqIds.has(m.id));
+    if (newMcqs.length > 0) {
+      await tx
+        .insert(schema.mcqSubmissions)
+        .values(
+          newMcqs.map((m) => ({
+            id: m.id,
+            contestId: m.contestId,
+            roundId: m.roundId,
+            questionId: m.questionId,
+            userId: m.userId,
+            selectedOptionId: m.selectedOptionId,
+            isCorrect: m.isCorrect,
+            score: m.score,
+            timeTakenSeconds: m.timeTakenSeconds ?? 0,
+            submittedAt: new Date(m.submittedAt),
+          }))
+        )
+        .onConflictDoNothing();
     }
 
     // Sync Coding submissions
-    const nextCodingIds = new Set(db.codingSubmissions.map((s) => s.id));
-    for (const oldId of prevCodingIds) {
-      if (!nextCodingIds.has(oldId)) {
-        await client.query("DELETE FROM coding_submissions WHERE id = $1", [oldId]);
-      }
+    const nextCodingIds = new Set(snapshot.codingSubmissions.map((s) => s.id));
+    const deletedCodingIds = [...prevCodingIds].filter(
+      (id) => !nextCodingIds.has(id)
+    );
+    if (deletedCodingIds.length > 0) {
+      await tx
+        .delete(schema.codingSubmissions)
+        .where(inArray(schema.codingSubmissions.id, deletedCodingIds));
     }
-    for (const s of db.codingSubmissions) {
-      if (!prevCodingIds.has(s.id)) {
-        await client.query(
-          `INSERT INTO coding_submissions (id, contest_id, round_id, question_id, user_id, language, source_code, full_source_code, status, score, max_score, passed_count, total_count, execution_time_ms, run_id, compile_error, test_case_results, submitted_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb, $18)
-           ON CONFLICT (id) DO NOTHING`,
-          [
-            s.id,
-            s.contestId,
-            s.roundId,
-            s.questionId,
-            s.userId,
-            s.language,
-            s.sourceCode,
-            s.fullSourceCode,
-            s.status,
-            s.score,
-            s.maxScore,
-            s.passedCount,
-            s.totalCount,
-            s.executionTimeMs,
-            s.runId,
-            s.compileError ?? null,
-            JSON.stringify(s.testCaseResults),
-            s.submittedAt,
-          ]
-        );
-      }
+    const newCodings = snapshot.codingSubmissions.filter(
+      (s) => !prevCodingIds.has(s.id)
+    );
+    if (newCodings.length > 0) {
+      await tx
+        .insert(schema.codingSubmissions)
+        .values(
+          newCodings.map((s) => ({
+            id: s.id,
+            contestId: s.contestId,
+            roundId: s.roundId,
+            questionId: s.questionId,
+            userId: s.userId,
+            language: s.language,
+            sourceCode: s.sourceCode,
+            fullSourceCode: s.fullSourceCode,
+            status: s.status,
+            score: s.score,
+            maxScore: s.maxScore,
+            passedCount: s.passedCount,
+            totalCount: s.totalCount,
+            executionTimeMs: s.executionTimeMs,
+            timeTakenSeconds: s.timeTakenSeconds ?? 0,
+            runId: s.runId,
+            compileError: s.compileError ?? null,
+            testCaseResults: s.testCaseResults,
+            submittedAt: new Date(s.submittedAt),
+          }))
+        )
+        .onConflictDoNothing();
     }
 
-    await client.query("COMMIT");
     return result;
-  } catch (err) {
-    await client.query("ROLLBACK").catch(() => undefined);
-    throw err;
-  } finally {
-    client.release();
-  }
+  });
 }
 
-// ---------- Auth & Enrollment SQL Helpers ----------
+// ---------- Auth, Enrollment, Attempts, Overrides & Proctoring Helpers ----------
 
 export async function authenticateUser(
   email: string,
   password: string
 ): Promise<User | null> {
-  const pool = await getPool();
-  const res = await pool.query<{
-    id: string;
-    name: string;
-    handle: string;
-    email: string;
-    password_hash: string;
-    role: UserRole;
-  }>(
-    "SELECT id, name, handle, email, password_hash, role FROM users WHERE LOWER(email) = LOWER($1)",
-    [email.trim()]
-  );
-  const row = res.rows[0];
-  if (!row) return null;
-  if (!verifyPassword(password, row.password_hash)) return null;
+  const db = await getDb();
+  const normalized = email.trim().toLowerCase();
+  const rows = await db
+    .select()
+    .from(schema.users)
+    .where(sql`LOWER(${schema.users.email}) = ${normalized}`)
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || !verifyPassword(password, row.passwordHash)) {
+    return null;
+  }
+
   return {
     id: row.id,
     name: row.name,
@@ -351,17 +342,20 @@ export async function registerUser(input: {
   password: string;
   role: UserRole;
 }): Promise<{ user?: User; error?: string }> {
-  const pool = await getPool();
+  const db = await getDb();
   const email = input.email.trim().toLowerCase();
   const name = input.name.trim();
   if (!name || !email || input.password.length < 4) {
     return { error: "Name, valid email, and password (4+ chars) are required." };
   }
 
-  const existing = await pool.query("SELECT 1 FROM users WHERE LOWER(email) = $1", [
-    email,
-  ]);
-  if ((existing.rowCount ?? 0) > 0) {
+  const existing = await db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(sql`LOWER(${schema.users.email}) = ${email}`)
+    .limit(1);
+
+  if (existing.length > 0) {
     return { error: "An account with this email already exists." };
   }
 
@@ -375,23 +369,27 @@ export async function registerUser(input: {
   const passwordHash = hashPassword(input.password);
   const role: UserRole = input.role === "moderator" ? "moderator" : "participant";
 
-  await pool.query(
-    `INSERT INTO users (id, name, handle, email, password_hash, role)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [id, name, handle, email, passwordHash, role]
-  );
+  await db.insert(schema.users).values({
+    id,
+    name,
+    handle,
+    email,
+    passwordHash,
+    role,
+  });
 
   return { user: { id, name, handle, email, role } };
 }
 
 export async function createSession(userId: string): Promise<string> {
-  const pool = await getPool();
+  const db = await getDb();
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
-  await pool.query(
-    "INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)",
-    [token, userId, expiresAt]
-  );
+  const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+  await db.insert(schema.sessions).values({
+    token,
+    userId,
+    expiresAt,
+  });
   return token;
 }
 
@@ -402,38 +400,45 @@ export async function getSessionData(token: string | undefined): Promise<{
   if (!token) {
     return { user: null, enrolledContestIds: [] };
   }
-  const pool = await getPool();
-  const res = await pool.query<{
-    id: string;
-    name: string;
-    handle: string;
-    email: string;
-    role: UserRole;
-  }>(
-    `SELECT u.id, u.name, u.handle, u.email, u.role
-     FROM sessions s
-     JOIN users u ON u.id = s.user_id
-     WHERE s.token = $1 AND s.expires_at > NOW()`,
-    [token]
-  );
-  const user = res.rows[0] ?? null;
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: schema.users.id,
+      name: schema.users.name,
+      handle: schema.users.handle,
+      email: schema.users.email,
+      role: schema.users.role,
+    })
+    .from(schema.sessions)
+    .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
+    .where(
+      and(
+        eq(schema.sessions.token, token),
+        gt(schema.sessions.expiresAt, new Date())
+      )
+    )
+    .limit(1);
+
+  const user = rows[0] ?? null;
   if (!user) {
     return { user: null, enrolledContestIds: [] };
   }
-  const enrRes = await pool.query<{ contest_id: string }>(
-    "SELECT contest_id FROM contest_enrollments WHERE user_id = $1",
-    [user.id]
-  );
+
+  const enrRows = await db
+    .select({ contestId: schema.contestEnrollments.contestId })
+    .from(schema.contestEnrollments)
+    .where(eq(schema.contestEnrollments.userId, user.id));
+
   return {
     user,
-    enrolledContestIds: enrRes.rows.map((r) => r.contest_id),
+    enrolledContestIds: enrRows.map((r) => r.contestId),
   };
 }
 
 export async function deleteSession(token: string | undefined): Promise<void> {
   if (!token) return;
-  const pool = await getPool();
-  await pool.query("DELETE FROM sessions WHERE token = $1", [token]);
+  const db = await getDb();
+  await db.delete(schema.sessions).where(eq(schema.sessions.token, token));
 }
 
 export async function enrollUserByJoinCode(
@@ -449,36 +454,91 @@ export async function enrollUserByJoinCode(
     return { error: "Please enter a valid joining code." };
   }
 
-  const pool = await getPool();
-  const contestRes = await pool.query<{
-    id: string;
-    title: string;
-    join_code: string;
-  }>(
-    "SELECT id, title, join_code FROM contests WHERE UPPER(TRIM(join_code)) = $1",
-    [normalized]
-  );
-  const contest = contestRes.rows[0];
+  const db = await getDb();
+  const contestRows = await db
+    .select({
+      id: schema.contests.id,
+      title: schema.contests.title,
+      joinCode: schema.contests.joinCode,
+    })
+    .from(schema.contests)
+    .where(sql`UPPER(TRIM(${schema.contests.joinCode})) = ${normalized}`)
+    .limit(1);
+
+  const contest = contestRows[0];
   if (!contest) {
     return { error: `No contest found with joining code "${normalized}".` };
   }
 
-  await pool.query(
-    `INSERT INTO contest_enrollments (contest_id, user_id)
-     VALUES ($1, $2)
-     ON CONFLICT (contest_id, user_id) DO NOTHING`,
-    [contest.id, userId]
-  );
+  await db
+    .insert(schema.contestEnrollments)
+    .values({ contestId: contest.id, userId })
+    .onConflictDoNothing();
 
-  const enrRes = await pool.query<{ contest_id: string }>(
-    "SELECT contest_id FROM contest_enrollments WHERE user_id = $1",
-    [userId]
-  );
+  const enrRows = await db
+    .select({ contestId: schema.contestEnrollments.contestId })
+    .from(schema.contestEnrollments)
+    .where(eq(schema.contestEnrollments.userId, userId));
 
   return {
-    contest: { id: contest.id, title: contest.title, joinCode: contest.join_code },
-    enrolledContestIds: enrRes.rows.map((r) => r.contest_id),
+    contest,
+    enrolledContestIds: enrRows.map((r) => r.contestId),
   };
+}
+
+export async function startQuestionAttempts(input: {
+  contestId: string;
+  roundId: string;
+  questionIds: string[];
+  userId: string;
+}): Promise<void> {
+  const { contestId, roundId, questionIds, userId } = input;
+  const uniqueIds = [...new Set(questionIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return;
+
+  const db = await getDb();
+  await db
+    .insert(schema.questionAttempts)
+    .values(
+      uniqueIds.map((qId) => ({
+        contestId,
+        roundId,
+        questionId: qId,
+        userId,
+      }))
+    )
+    .onConflictDoNothing();
+}
+
+export async function computeSolveTimeSeconds(input: {
+  contestId: string;
+  roundId: string;
+  questionId: string;
+  userId: string;
+  roundStartTimeIso?: string;
+}): Promise<number> {
+  const db = await getDb();
+  const rows = await db
+    .select({ startedAt: schema.questionAttempts.startedAt })
+    .from(schema.questionAttempts)
+    .where(
+      and(
+        eq(schema.questionAttempts.contestId, input.contestId),
+        eq(schema.questionAttempts.roundId, input.roundId),
+        eq(schema.questionAttempts.questionId, input.questionId),
+        eq(schema.questionAttempts.userId, input.userId)
+      )
+    )
+    .limit(1);
+
+  const startMs = rows[0]?.startedAt
+    ? rows[0].startedAt.getTime()
+    : input.roundStartTimeIso
+    ? new Date(input.roundStartTimeIso).getTime()
+    : Date.now();
+
+  if (Number.isNaN(startMs)) return 1;
+  return Math.max(1, Math.round((Date.now() - startMs) / 1000));
 }
 
 export async function recordProctoringViolation(
@@ -486,58 +546,158 @@ export async function recordProctoringViolation(
   userId: string,
   reason: string
 ): Promise<{ count: number; lastReason: string }> {
-  const pool = await getPool();
-  const res = await pool.query<{ count: number; last_reason: string }>(
-    `INSERT INTO proctoring_violations (contest_id, user_id, count, last_reason, updated_at)
-     VALUES ($1, $2, 1, $3, NOW())
-     ON CONFLICT (contest_id, user_id)
-     DO UPDATE SET
-       count = proctoring_violations.count + 1,
-       last_reason = EXCLUDED.last_reason,
-       updated_at = NOW()
-     RETURNING count, last_reason`,
-    [contestId, userId, reason]
-  );
+  const db = await getDb();
+  const rows = await db
+    .insert(schema.proctoringViolations)
+    .values({
+      contestId,
+      userId,
+      count: 1,
+      lastReason: reason,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [
+        schema.proctoringViolations.contestId,
+        schema.proctoringViolations.userId,
+      ],
+      set: {
+        count: sql`${schema.proctoringViolations.count} + 1`,
+        lastReason: reason,
+        updatedAt: new Date(),
+      },
+    })
+    .returning({
+      count: schema.proctoringViolations.count,
+      lastReason: schema.proctoringViolations.lastReason,
+    });
+
   return {
-    count: res.rows[0]?.count ?? 1,
-    lastReason: res.rows[0]?.last_reason ?? reason,
+    count: rows[0]?.count ?? 1,
+    lastReason: rows[0]?.lastReason ?? reason,
   };
+}
+
+export async function resetProctoringViolation(
+  contestId: string,
+  userId: string
+): Promise<{ count: number; lastReason: string }> {
+  const db = await getDb();
+  await db
+    .insert(schema.proctoringViolations)
+    .values({
+      contestId,
+      userId,
+      count: 0,
+      lastReason: "Reset by moderator",
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [
+        schema.proctoringViolations.contestId,
+        schema.proctoringViolations.userId,
+      ],
+      set: {
+        count: 0,
+        lastReason: "Reset by moderator",
+        updatedAt: new Date(),
+      },
+    });
+
+  return { count: 0, lastReason: "Reset by moderator" };
 }
 
 export async function getProctoringViolations(
   contestId: string,
   userId?: string
 ): Promise<{ userId: string; count: number; lastReason: string; updatedAt: string }[]> {
-  const pool = await getPool();
-  const res = userId
-    ? await pool.query<{
-        user_id: string;
-        count: number;
-        last_reason: string;
-        updated_at: Date;
-      }>(
-        "SELECT user_id, count, last_reason, updated_at FROM proctoring_violations WHERE contest_id = $1 AND user_id = $2",
-        [contestId, userId]
+  const db = await getDb();
+  const whereClause = userId
+    ? and(
+        eq(schema.proctoringViolations.contestId, contestId),
+        eq(schema.proctoringViolations.userId, userId)
       )
-    : await pool.query<{
-        user_id: string;
-        count: number;
-        last_reason: string;
-        updated_at: Date;
-      }>(
-        "SELECT user_id, count, last_reason, updated_at FROM proctoring_violations WHERE contest_id = $1",
-        [contestId]
-      );
+    : eq(schema.proctoringViolations.contestId, contestId);
 
-  return res.rows.map((r) => ({
-    userId: r.user_id,
+  const rows = await db
+    .select()
+    .from(schema.proctoringViolations)
+    .where(whereClause);
+
+  return rows.map((r) => ({
+    userId: r.userId,
     count: r.count,
-    lastReason: r.last_reason,
-    updatedAt: new Date(r.updated_at).toISOString(),
+    lastReason: r.lastReason,
+    updatedAt: r.updatedAt.toISOString(),
   }));
 }
 
-// ---------- Leaderboard Calculation ----------
+export async function setScoreOverride(input: {
+  contestId: string;
+  roundId: string;
+  userId: string;
+  overrideScore: number;
+  reason?: string;
+  updatedBy?: string;
+}): Promise<ScoreOverride> {
+  const db = await getDb();
+  const now = new Date();
+  const rows = await db
+    .insert(schema.scoreOverrides)
+    .values({
+      contestId: input.contestId,
+      roundId: input.roundId,
+      userId: input.userId,
+      overrideScore: input.overrideScore,
+      reason: input.reason ?? "",
+      updatedBy: input.updatedBy ?? "",
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [
+        schema.scoreOverrides.contestId,
+        schema.scoreOverrides.roundId,
+        schema.scoreOverrides.userId,
+      ],
+      set: {
+        overrideScore: input.overrideScore,
+        reason: input.reason ?? "",
+        updatedBy: input.updatedBy ?? "",
+        updatedAt: now,
+      },
+    })
+    .returning();
+
+  const row = rows[0];
+  return {
+    contestId: row.contestId,
+    roundId: row.roundId,
+    userId: row.userId,
+    overrideScore: row.overrideScore,
+    reason: row.reason,
+    updatedBy: row.updatedBy,
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export async function clearScoreOverride(input: {
+  contestId: string;
+  roundId: string;
+  userId: string;
+}): Promise<void> {
+  const db = await getDb();
+  await db
+    .delete(schema.scoreOverrides)
+    .where(
+      and(
+        eq(schema.scoreOverrides.contestId, input.contestId),
+        eq(schema.scoreOverrides.roundId, input.roundId),
+        eq(schema.scoreOverrides.userId, input.userId)
+      )
+    );
+}
+
+// ---------- Leaderboard Calculation & Solve-Time Tiebreaker ----------
 
 export function getQuestionPoints(q: Question): number {
   if (q.kind === "mcq") return q.points;
@@ -587,6 +747,13 @@ export function computeLeaderboard(
     if (sub.contestId === contestId) participantIds.add(sub.userId);
   }
 
+  const overrides = (db.scoreOverrides ?? []).filter(
+    (o) => o.contestId === contestId
+  );
+  const overrideMap = new Map<string, ScoreOverride>(
+    overrides.map((o) => [`${o.roundId}:${o.userId}`, o])
+  );
+
   const userMap = new Map(db.users.map((u) => [u.id, u]));
   const entries: LeaderboardEntry[] = [];
 
@@ -597,9 +764,13 @@ export function computeLeaderboard(
     let totalScore = 0;
     let problemsAttempted = 0;
     let problemsSolved = 0;
+    let totalSolveTimeSeconds = 0;
     let totalExecutionTimeMs = 0;
     let lastSubmittedAt: string | null = null;
     const roundScores: Record<string, number> = {};
+    const originalRoundScores: Record<string, number> = {};
+    const overriddenRoundIds: string[] = [];
+    const questionSolveTimes: Record<string, number> = {};
 
     const trackTime = (iso: string) => {
       if (!lastSubmittedAt || new Date(iso).getTime() > new Date(lastSubmittedAt).getTime()) {
@@ -630,6 +801,11 @@ export function computeLeaderboard(
             rScore += latest.score;
             problemsAttempted++;
             if (latest.isCorrect) problemsSolved++;
+            const qSec = latest.timeTakenSeconds ?? 0;
+            if (qSec > 0) {
+              questionSolveTimes[qId] = qSec;
+              totalSolveTimeSeconds += qSec;
+            }
             trackTime(latest.submittedAt);
           }
         }
@@ -647,6 +823,9 @@ export function computeLeaderboard(
             problemsAttempted++;
             const best = [...subs].sort((a, b) => {
               if (b.score !== a.score) return b.score - a.score;
+              const aSec = a.timeTakenSeconds ?? 0;
+              const bSec = b.timeTakenSeconds ?? 0;
+              if (aSec > 0 && bSec > 0 && aSec !== bSec) return aSec - bSec;
               if (a.executionTimeMs !== b.executionTimeMs) {
                 return a.executionTimeMs - b.executionTimeMs;
               }
@@ -656,9 +835,21 @@ export function computeLeaderboard(
             rScore += best.score;
             totalExecutionTimeMs += best.executionTimeMs;
             if (best.status === "Accepted") problemsSolved++;
+            const qSec = best.timeTakenSeconds ?? 0;
+            if (qSec > 0) {
+              questionSolveTimes[qId] = qSec;
+              totalSolveTimeSeconds += qSec;
+            }
             for (const s of subs) trackTime(s.submittedAt);
           }
         }
+      }
+
+      originalRoundScores[round.id] = rScore;
+      const override = overrideMap.get(`${round.id}:${userId}`);
+      if (override) {
+        rScore = override.overrideScore;
+        overriddenRoundIds.push(round.id);
       }
 
       roundScores[round.id] = rScore;
@@ -673,21 +864,35 @@ export function computeLeaderboard(
       totalScore,
       maxPossibleScore,
       roundScores,
+      originalRoundScores,
+      overriddenRoundIds,
       problemsAttempted,
       problemsSolved,
+      totalSolveTimeSeconds,
+      questionSolveTimes,
       totalExecutionTimeMs: Math.round(totalExecutionTimeMs * 100) / 100,
       lastSubmittedAt,
     });
   }
 
   entries.sort((a, b) => {
+    // 1. Highest total score
     if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    // 2. Most solved problems
     if (b.problemsSolved !== a.problemsSolved) return b.problemsSolved - a.problemsSolved;
+    // 3. Lowest cumulative solve time across questions (primary time tiebreaker)
     if (a.problemsAttempted > 0 && b.problemsAttempted > 0) {
+      if (a.totalSolveTimeSeconds !== b.totalSolveTimeSeconds) {
+        if (a.totalSolveTimeSeconds === 0) return 1;
+        if (b.totalSolveTimeSeconds === 0) return -1;
+        return a.totalSolveTimeSeconds - b.totalSolveTimeSeconds;
+      }
+      // 4. Fastest sandbox execution runtime
       if (a.totalExecutionTimeMs !== b.totalExecutionTimeMs) {
         return a.totalExecutionTimeMs - b.totalExecutionTimeMs;
       }
     }
+    // 5. Earliest final submission
     if (a.lastSubmittedAt && b.lastSubmittedAt) {
       return new Date(a.lastSubmittedAt).getTime() - new Date(b.lastSubmittedAt).getTime();
     }
