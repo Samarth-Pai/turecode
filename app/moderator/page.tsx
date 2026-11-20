@@ -33,14 +33,12 @@ function RoundEditorCard({
   questionBank,
   onUpdated,
   onOpenNewMcq,
-  onOpenNewCoding,
 }: {
   contestId: string;
   round: Round;
   questionBank: Question[];
   onUpdated: () => void;
-  onOpenNewMcq: (roundId: string, sectionId?: string) => void;
-  onOpenNewCoding: (roundId: string) => void;
+  onOpenNewMcq: (roundId: string, sectionId?: string, sectionTitle?: string) => void;
 }) {
   const [startLocal, setStartLocal] = useState(toLocalInputValue(round.startTime));
   const [endLocal, setEndLocal] = useState(toLocalInputValue(round.endTime));
@@ -79,6 +77,11 @@ function RoundEditorCard({
       if (!res.ok) {
         setNotice(data.error || "Update failed");
       } else {
+        if (data.round) {
+          setStartLocal(toLocalInputValue(data.round.startTime));
+          setEndLocal(toLocalInputValue(data.round.endTime));
+          setDuration(data.round.durationMinutes);
+        }
         if (msg) setNotice(msg);
         onUpdated();
       }
@@ -152,9 +155,15 @@ function RoundEditorCard({
       {/* Schedule Editor */}
       <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#CA8A04]">
-            Round Schedule & Timing
-          </h4>
+          <div>
+            <h4 className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#CA8A04]">
+              Round Schedule &amp; Timing
+            </h4>
+            <p className="font-fira text-[11px] text-[#BFA98A] mt-0.5">
+              Current Window: {new Date(round.startTime).toLocaleString()} →{" "}
+              {new Date(round.endTime).toLocaleString()} ({round.durationMinutes} mins)
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
@@ -279,13 +288,6 @@ function RoundEditorCard({
               >
                 <Plus className="h-3 w-3" /> Add Section
               </button>
-              <button
-                type="button"
-                onClick={() => onOpenNewMcq(round.id, round.sections?.[0]?.id)}
-                className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
-              >
-                + Create MCQ Set
-              </button>
             </div>
           </div>
 
@@ -330,7 +332,8 @@ function RoundEditorCard({
                           onClick={() =>
                             onOpenNewMcq(
                               round.id,
-                              sec.id === "default-sec" ? undefined : sec.id
+                              sec.id === "default-sec" ? undefined : sec.id,
+                              sec.title
                             )
                           }
                           className="rounded-[4px] border border-[#CA8A04]/50 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase text-[#CA8A04] hover:border-[#DAA520] cursor-pointer"
@@ -412,24 +415,14 @@ function RoundEditorCard({
               Contest Coding Problems ({assignedQuestions.length})
             </h4>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative w-72 sm:w-80">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#CA8A04]" />
-                <input
-                  value={codingSearchQuery}
-                  onChange={(e) => setCodingSearchQuery(e.target.value)}
-                  placeholder="Search coding question bank to add..."
-                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] pl-8 pr-3 py-1.5 font-spectral text-xs text-[#F5E6D3] placeholder:text-[#BFA98A]/70 focus:border-[#CA8A04] focus:outline-none"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onOpenNewCoding(round.id)}
-                className="rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors cursor-pointer"
-              >
-                + Create New DSL Coding Question
-              </button>
+            <div className="relative w-72 sm:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#CA8A04]" />
+              <input
+                value={codingSearchQuery}
+                onChange={(e) => setCodingSearchQuery(e.target.value)}
+                placeholder="Search coding question bank to add..."
+                className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] pl-8 pr-3 py-1.5 font-spectral text-xs text-[#F5E6D3] placeholder:text-[#BFA98A]/70 focus:border-[#CA8A04] focus:outline-none"
+              />
             </div>
           </div>
 
@@ -556,7 +549,8 @@ function ModeratorContent() {
   const searchParams = useSearchParams();
   const { currentUser, loading: authLoading } = useUser();
 
-  const initialContestId = searchParams.get("contestId") || "";
+  const urlContestId = searchParams.get("contestId") || "";
+  const openNewContestFromUrl = searchParams.get("newContest") === "1";
   const rawUrlTab = searchParams.get("tab");
   const normalizedUrlTab: "rounds" | "bank" | "submissions" | "leaderboard" =
     rawUrlTab === "bank" || rawUrlTab === "dsl"
@@ -583,12 +577,18 @@ function ModeratorContent() {
 
   const [contests, setContests] = useState<Contest[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [selectedContestId, setSelectedContestId] = useState(initialContestId);
+  const [selectedContestId, setSelectedContestId] = useState(() => {
+    if (urlContestId) return urlContestId;
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("turecode_active_contest_id") || "";
+    }
+    return "";
+  });
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const [showNewContest, setShowNewContest] = useState(false);
+  const [showNewContest, setShowNewContest] = useState(openNewContestFromUrl);
   const [newContestTitle, setNewContestTitle] = useState("");
   const [newContestDesc, setNewContestDesc] = useState("");
   const [newContestJoinCode, setNewContestJoinCode] = useState("");
@@ -599,13 +599,15 @@ function ModeratorContent() {
   const [newRoundDesc, setNewRoundDesc] = useState("");
   const [newRoundType, setNewRoundType] = useState<"mcq" | "coding">("coding");
   const [newRoundDuration, setNewRoundDuration] = useState(60);
+  const [newRoundStartLocal, setNewRoundStartLocal] = useState("");
+  const [newRoundEndLocal, setNewRoundEndLocal] = useState("");
 
   const [mcqModalTarget, setMcqModalTarget] = useState<{
     contestId?: string;
     roundId?: string;
     sectionId?: string;
+    sectionTitle?: string;
   } | null>(null);
-  const [dslTargetRoundId, setDslTargetRoundId] = useState<string>("");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -650,7 +652,15 @@ function ModeratorContent() {
     };
   }, [currentUser?.id]);
 
-  const activeContest = contests.find((c) => c.id === selectedContestId) ?? contests[0];
+  const effectiveContestId = urlContestId || selectedContestId;
+  const activeContest =
+    contests.find((c) => c.id === effectiveContestId) ?? contests[0];
+
+  useEffect(() => {
+    if (activeContest?.id && typeof window !== "undefined") {
+      window.localStorage.setItem("turecode_active_contest_id", activeContest.id);
+    }
+  }, [activeContest?.id]);
 
   const handleCreateContest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -717,12 +727,20 @@ function ModeratorContent() {
         roundDescription: newRoundDesc,
         type: newRoundType,
         durationMinutes: newRoundDuration,
+        startTime: newRoundStartLocal
+          ? new Date(newRoundStartLocal).toISOString()
+          : undefined,
+        endTime: newRoundEndLocal
+          ? new Date(newRoundEndLocal).toISOString()
+          : undefined,
         questionIds: [],
       }),
     });
     if (res.ok) {
       setNewRoundTitle("");
       setNewRoundDesc("");
+      setNewRoundStartLocal("");
+      setNewRoundEndLocal("");
       setShowNewRound(false);
       await loadAll();
     }
@@ -759,151 +777,136 @@ function ModeratorContent() {
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 space-y-6 font-spectral text-[#F5E6D3]">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#CA8A04]">
-            Contest Administration
-          </div>
-          <h1 className="font-cinzel text-2xl font-bold text-[#F5E6D3] mt-0.5">
-            Moderator Studio
-          </h1>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href="/sandbox-status"
-            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-2 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors duration-300"
-          >
-            Sandbox Health
-          </Link>
-          <button
-            type="button"
-            onClick={() => setShowNewContest(true)}
-            className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] shadow-[0_0_16px_rgba(202,138,4,0.28)] hover:bg-[#B8780A] transition-colors duration-300 cursor-pointer"
-          >
-            + New Contest
-          </button>
-        </div>
-      </div>
-
-      {/* Contest Switcher, Join Code, Strict Mode Toggle & Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] px-4 py-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={activeContest?.id || ""}
-            onChange={(e) => setSelectedContestId(e.target.value)}
-            className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-cinzel text-sm font-semibold text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
-          >
-            {contests.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title} ({c.rounds.length} rounds)
-              </option>
-            ))}
-          </select>
-
-          {activeContest?.joinCode && (
-            <div className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 text-xs">
-              <span className="font-cinzel text-[10px] uppercase tracking-[0.8px] text-[#BFA98A]">
-                Join Code:
-              </span>
-              <code className="font-fira font-bold text-[#CA8A04]">
-                {activeContest.joinCode}
-              </code>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard?.writeText(activeContest.joinCode);
-                  setCopiedCode(true);
-                  setTimeout(() => setCopiedCode(false), 1500);
-                }}
-                className="text-[#BFA98A] hover:text-[#CA8A04] cursor-pointer"
-              >
-                {copiedCode ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleRegenerateCode}
-                className="text-[#BFA98A] hover:text-[#F5E6D3] cursor-pointer"
-                title="Regenerate joining code"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-
-          {activeContest && (
-            <button
-              type="button"
-              onClick={handleToggleStrictMode}
-              className={`inline-flex items-center gap-1.5 rounded-[4px] border px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 cursor-pointer ${
-                activeContest.strictMode
-                  ? "border-[#581C87] bg-[#581C87]/35 text-[#F5E6D3] shadow-[0_0_12px_rgba(88,28,135,0.35)]"
-                  : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
-              }`}
-              title="Toggle Strict Mode (requires Fullscreen + blocks Tab Switching, max 7 warnings)"
-            >
-              <ShieldAlert className="h-3.5 w-3.5 text-[#CA8A04]" />
-              Strict Mode: {activeContest.strictMode ? "ON" : "OFF"}
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] p-1">
-          {(
-            [
-              { id: "rounds", label: "Rounds & Schedules" },
-              { id: "bank", label: "Question Bank" },
-              { id: "submissions", label: "Code Submissions" },
-              { id: "leaderboard", label: "Leaderboard" },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={`rounded-[2px] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
-                tab === item.id
-                  ? "bg-[#CA8A04] text-[#110A07]"
-                  : "text-[#BFA98A] hover:text-[#F5E6D3]"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {loading && contests.length === 0 ? (
         <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
           Loading Moderator Studio...
         </div>
-      ) : tab === "rounds" ? (
-        activeContest ? (
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="font-cinzel text-lg font-bold text-[#F5E6D3]">
+      ) : tab === "bank" ? (
+        <PlatformQuestionBank
+          questions={questions}
+          activeContestId={activeContest?.id}
+          onUpdated={() => {
+            loadAll();
+            setRefreshTick((t) => t + 1);
+          }}
+        />
+      ) : activeContest ? (
+        <>
+          {/* Selected Contest Management Header (no redundant contest dropdown) */}
+          <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
+                  <Link href="/" className="hover:text-[#CA8A04] transition-colors">
+                    ← All Contests
+                  </Link>
+                  <span>/</span>
+                  <span className="text-[#CA8A04]">Contest Management</span>
+                </div>
+                <h1 className="font-cinzel text-2xl font-bold text-[#F5E6D3]">
                   {activeContest.title}
-                </h2>
-                <p className="font-spectral text-xs text-[#BFA98A]">
+                </h1>
+                <p className="font-spectral text-xs text-[#BFA98A] max-w-3xl">
                   {activeContest.description}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowNewRound(true)}
-                className="rounded-[4px] border border-[#CA8A04]/70 bg-[#2A1810] px-4 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 transition-colors cursor-pointer"
-              >
-                + Add Round (MCQ / Coding)
-              </button>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                {activeContest.joinCode && (
+                  <div className="flex items-center gap-2 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 text-xs">
+                    <span className="font-cinzel text-[10px] uppercase tracking-[0.8px] text-[#BFA98A]">
+                      Join Code:
+                    </span>
+                    <code className="font-fira font-bold text-[#CA8A04]">
+                      {activeContest.joinCode}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(activeContest.joinCode);
+                        setCopiedCode(true);
+                        setTimeout(() => setCopiedCode(false), 1500);
+                      }}
+                      className="text-[#BFA98A] hover:text-[#CA8A04] cursor-pointer"
+                    >
+                      {copiedCode ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#22C55E]" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRegenerateCode}
+                      className="text-[#BFA98A] hover:text-[#F5E6D3] cursor-pointer"
+                      title="Regenerate joining code"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleToggleStrictMode}
+                  className={`inline-flex items-center gap-1.5 rounded-[4px] border px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 cursor-pointer ${
+                    activeContest.strictMode
+                      ? "border-[#581C87] bg-[#581C87]/35 text-[#F5E6D3] shadow-[0_0_12px_rgba(88,28,135,0.35)]"
+                      : "border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:border-[#CA8A04]/60 hover:text-[#F5E6D3]"
+                  }`}
+                  title="Toggle Strict Mode (requires Fullscreen + blocks Tab Switching, max 7 warnings)"
+                >
+                  <ShieldAlert className="h-3.5 w-3.5 text-[#CA8A04]" />
+                  Strict Mode: {activeContest.strictMode ? "ON" : "OFF"}
+                </button>
+              </div>
             </div>
 
-            {activeContest.rounds.length === 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#462E22] pt-3">
+              <div className="flex flex-wrap items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] p-1">
+                {(
+                  [
+                    { id: "rounds", label: `Rounds & Schedules (${activeContest.rounds.length})` },
+                    { id: "submissions", label: "Code Submissions" },
+                    { id: "leaderboard", label: "Leaderboard" },
+                  ] as const
+                ).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setTab(item.id)}
+                    className={`rounded-[2px] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] transition-colors duration-300 cursor-pointer ${
+                      tab === item.id
+                        ? "bg-[#CA8A04] text-[#110A07]"
+                        : "text-[#BFA98A] hover:text-[#F5E6D3]"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {tab === "rounds" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const now = Date.now();
+                    setNewRoundStartLocal(toLocalInputValue(new Date(now).toISOString()));
+                    setNewRoundEndLocal(
+                      toLocalInputValue(new Date(now + 24 * 3600 * 1000).toISOString())
+                    );
+                    setShowNewRound(true);
+                  }}
+                  className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] transition-colors cursor-pointer"
+                >
+                  + Add Round (MCQ / Coding)
+                </button>
+              )}
+            </div>
+          </div>
+
+          {tab === "rounds" ? (
+            activeContest.rounds.length === 0 ? (
               <div className="rounded-[4px] border border-dashed border-[#462E22] p-10 text-center font-spectral text-sm text-[#BFA98A]">
                 No rounds in this contest yet. Click &ldquo;+ Add Round&rdquo; to create an MCQ or Coding round.
               </div>
@@ -914,7 +917,7 @@ function ModeratorContent() {
                   .sort((a, b) => a.order - b.order)
                   .map((round) => (
                     <RoundEditorCard
-                      key={`${round.id}-${round.startTime}-${round.endTime}-${round.durationMinutes}`}
+                      key={round.id}
                       contestId={activeContest.id}
                       round={round}
                       questionBank={questions}
@@ -922,47 +925,32 @@ function ModeratorContent() {
                         loadAll();
                         setRefreshTick((t) => t + 1);
                       }}
-                      onOpenNewMcq={(rId, secId) =>
+                      onOpenNewMcq={(rId, secId, secTitle) =>
                         setMcqModalTarget({
                           contestId: activeContest.id,
                           roundId: rId,
                           sectionId: secId,
+                          sectionTitle: secTitle,
                         })
                       }
-                      onOpenNewCoding={(rId) => {
-                        setDslTargetRoundId(rId);
-                        setTab("bank");
-                      }}
                     />
                   ))}
               </div>
-            )}
-          </div>
-        ) : null
-      ) : tab === "bank" ? (
-        <PlatformQuestionBank
-          questions={questions}
-          activeContestId={activeContest?.id}
-          defaultRoundId={dslTargetRoundId}
-          onUpdated={() => {
-            loadAll();
-            setRefreshTick((t) => t + 1);
-          }}
-        />
-      ) : tab === "submissions" ? (
-        activeContest ? (
-          <ModeratorSubmissionsFeed
-            contest={activeContest}
-            questions={questions}
-          />
-        ) : null
-      ) : activeContest ? (
-        <LeaderboardPanel
-          contestId={activeContest.id}
-          isModerator={true}
-          questions={questions}
-          refreshSignal={refreshTick}
-        />
+            )
+          ) : tab === "submissions" ? (
+            <ModeratorSubmissionsFeed
+              contest={activeContest}
+              questions={questions}
+            />
+          ) : (
+            <LeaderboardPanel
+              contestId={activeContest.id}
+              isModerator={true}
+              questions={questions}
+              refreshSignal={refreshTick}
+            />
+          )}
+        </>
       ) : null}
 
       {/* New Contest Modal (with Platform Question Bank Reuse) */}
@@ -1091,17 +1079,41 @@ function ModeratorContent() {
                   className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
-                  Duration (minutes)
-                </label>
-                <input
-                  type="number"
-                  min={5}
-                  value={newRoundDuration}
-                  onChange={(e) => setNewRoundDuration(Number(e.target.value) || 60)}
-                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
-                />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newRoundStartLocal}
+                    onChange={(e) => setNewRoundStartLocal(e.target.value)}
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newRoundEndLocal}
+                    onChange={(e) => setNewRoundEndLocal(e.target.value)}
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-2 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    Duration (mins)
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    value={newRoundDuration}
+                    onChange={(e) => setNewRoundDuration(Number(e.target.value) || 60)}
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -1135,6 +1147,7 @@ function ModeratorContent() {
               : []
           }
           defaultSectionId={mcqModalTarget.sectionId}
+          defaultSectionTitle={mcqModalTarget.sectionTitle}
           onClose={() => setMcqModalTarget(null)}
           onSaved={() => {
             loadAll();

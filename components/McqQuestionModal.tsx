@@ -10,6 +10,7 @@ interface McqQuestionModalProps {
   roundId?: string;
   sections?: McqSection[];
   defaultSectionId?: string;
+  defaultSectionTitle?: string;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -48,13 +49,16 @@ export function McqQuestionModal({
   roundId,
   sections = [],
   defaultSectionId,
+  defaultSectionTitle,
   onClose,
   onSaved,
 }: McqQuestionModalProps) {
-  const [selectedSectionId, setSelectedSectionId] = useState(
-    defaultSectionId || sections[0]?.id || "__new__"
-  );
-  const [newSectionTitle, setNewSectionTitle] = useState("");
+  const resolvedSection =
+    sections.find((s) => s.id === defaultSectionId) ?? sections[0];
+  const targetSectionId = defaultSectionId || resolvedSection?.id;
+  const targetSectionTitle =
+    defaultSectionTitle || resolvedSection?.title || "Section A: General";
+
   const [drafts, setDrafts] = useState<DraftMcqItem[]>(() => [makeEmptyDraft(1)]);
   const [activeDraftIdx, setActiveDraftIdx] = useState(0);
   const [showPreview, setShowPreview] = useState(true);
@@ -86,11 +90,6 @@ export function McqQuestionModal({
     e.preventDefault();
     setError(null);
 
-    if (selectedSectionId === "__new__" && !newSectionTitle.trim()) {
-      setError("Please enter a Section title (or choose an existing section).");
-      return;
-    }
-
     for (let i = 0; i < drafts.length; i++) {
       const d = drafts[i];
       if (!d.prompt.trim()) {
@@ -114,9 +113,8 @@ export function McqQuestionModal({
           kind: "mcq",
           contestId,
           roundId,
-          sectionId: selectedSectionId === "__new__" ? undefined : selectedSectionId,
-          newSectionTitle:
-            selectedSectionId === "__new__" ? newSectionTitle.trim() : undefined,
+          sectionId: targetSectionId,
+          newSectionTitle: targetSectionId ? undefined : targetSectionTitle,
           questions: drafts.map((d) => ({
             prompt: d.prompt,
             options: d.options,
@@ -146,11 +144,11 @@ export function McqQuestionModal({
         <div className="flex items-center justify-between border-b border-[#462E22] px-6 py-4">
           <div>
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
-              Create MCQ Set Under Section
+              Add MCQ Set — <span className="text-[#CA8A04]">{targetSectionTitle}</span>
             </h3>
             <p className="font-spectral text-xs text-[#BFA98A] mt-0.5">
               Supports LaTeX math via <code className="font-fira text-[#CA8A04]">$inline$</code> or{" "}
-              <code className="font-fira text-[#CA8A04]">$$display$$</code>. Individual question titles are not needed.
+              <code className="font-fira text-[#CA8A04]">$$display$$</code>.
             </p>
           </div>
           <button
@@ -163,42 +161,6 @@ export function McqQuestionModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
-          {/* Section Picker */}
-          <div className="grid gap-3 sm:grid-cols-2 rounded-[4px] border border-[#462E22] bg-[#110A07] p-3.5">
-            <div>
-              <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#CA8A04] mb-1">
-                Target Section
-              </label>
-              <select
-                value={selectedSectionId}
-                onChange={(e) => setSelectedSectionId(e.target.value)}
-                className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
-              >
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title} ({s.questionIds.length} MCQs)
-                  </option>
-                ))}
-                <option value="__new__">+ Create New Section...</option>
-              </select>
-            </div>
-
-            {selectedSectionId === "__new__" && (
-              <div>
-                <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#CA8A04] mb-1">
-                  New Section Title
-                </label>
-                <input
-                  required
-                  value={newSectionTitle}
-                  onChange={(e) => setNewSectionTitle(e.target.value)}
-                  placeholder="e.g., Section C: Probability & Combinatorics"
-                  className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
-
           {/* Batch / Set Question Switcher */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#462E22] pb-3">
             <div className="flex flex-wrap items-center gap-1.5">

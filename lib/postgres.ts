@@ -49,7 +49,9 @@ async function canConnect(connStr: string): Promise<boolean> {
 }
 
 async function startLocalPostgresIfNeeded(): Promise<void> {
-  if (process.env.DATABASE_URL && (await canConnect(process.env.DATABASE_URL))) {
+  // When an explicit DATABASE_URL is configured (e.g. CockroachDB / managed Postgres),
+  // connect directly to it instead of falling back to local .pgdata.
+  if (process.env.DATABASE_URL) {
     return;
   }
 
@@ -406,6 +408,7 @@ export async function getDb(): Promise<DrizzleDb> {
       await startLocalPostgresIfNeeded();
       const pool = new Pool({
         connectionString: getConnectionString(),
+        connectionTimeoutMillis: 10000,
         max: 15,
       });
       const db = drizzle(pool, { schema });

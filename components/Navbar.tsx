@@ -42,6 +42,16 @@ export function Navbar() {
 
   const isModerator = currentUser?.role === "moderator";
   const currentTab = searchParams.get("tab") || "rounds";
+  const activeContestId = (() => {
+    const fromQuery = searchParams.get("contestId");
+    if (fromQuery) return fromQuery;
+    const match = pathname.match(/^\/contests\/([^/]+)/);
+    if (match?.[1]) return match[1];
+    return "";
+  })();
+  const contestQueryPrefix = activeContestId
+    ? `contestId=${encodeURIComponent(activeContestId)}&`
+    : "";
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -108,7 +118,7 @@ export function Navbar() {
 
   const moderatorLinks = [
     {
-      href: "/moderator?tab=rounds",
+      href: `/moderator?${contestQueryPrefix}tab=rounds`,
       tab: "rounds",
       label: "Rounds",
       icon: Layers,
@@ -120,13 +130,13 @@ export function Navbar() {
       icon: BookOpen,
     },
     {
-      href: "/moderator?tab=submissions",
+      href: `/moderator?${contestQueryPrefix}tab=submissions`,
       tab: "submissions",
       label: "Submissions",
       icon: FileCode2,
     },
     {
-      href: "/moderator?tab=leaderboard",
+      href: `/moderator?${contestQueryPrefix}tab=leaderboard`,
       tab: "leaderboard",
       label: "Leaderboard",
       icon: ShieldCheck,
@@ -141,13 +151,18 @@ export function Navbar() {
 
   const isContestsActive =
     pathname === "/" || pathname.startsWith("/contests");
+  const inParticipantContestRoute =
+    !isModerator && pathname.startsWith("/contests/") && Boolean(activeContestId);
+  const contestsHref = inParticipantContestRoute
+    ? `/contests/${activeContestId}`
+    : "/";
 
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] shadow-[0_2px_10px_rgba(0,0,0,0.45)]">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         {/* Left: Brand & Dynamic Context Badge */}
         <div className="flex items-center gap-4 min-w-0">
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+          <Link href={contestsHref} className="flex items-center gap-2.5 group shrink-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-[4px] border border-[#DAA520] bg-[#CA8A04] text-[#110A07] shadow-[0_1px_4px_rgba(202,138,4,0.3)] transition-all duration-300 group-hover:bg-[#B8780A]">
               <Code2 className="h-5 w-5" />
             </div>
@@ -166,7 +181,7 @@ export function Navbar() {
           {/* Desktop Organized Navigation */}
           <nav className="hidden md:flex items-center gap-1.5">
             <Link
-              href="/"
+              href={contestsHref}
               className={`whitespace-nowrap inline-flex items-center gap-1.5 rounded-[4px] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.8px] transition-all duration-200 ${
                 isContestsActive
                   ? "border border-[#CA8A04] bg-[#2A1810] text-[#F5E6D3] shadow-[0_0_14px_rgba(202,138,4,0.2)]"
@@ -174,7 +189,7 @@ export function Navbar() {
               }`}
             >
               <Trophy className="h-3.5 w-3.5 text-[#CA8A04]" />
-              <span>Contests</span>
+              <span>{inParticipantContestRoute ? "Current Contest" : "Contests"}</span>
             </Link>
 
             {isModerator && (

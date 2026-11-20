@@ -1,10 +1,9 @@
 "use client";
 
-import { Code2, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
+import { Code2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
 import { useUser } from "@/components/UserContext";
-import type { UserRole } from "@/lib/types";
 
 function LoginContent() {
   const router = useRouter();
@@ -16,7 +15,6 @@ function LoginContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("participant");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,24 +26,9 @@ function LoginContent() {
       const res =
         mode === "login"
           ? await login(email, password)
-          : await register({ name, email, password, role });
+          : await register({ name, email, password, role: "participant" });
       if (!res.ok) {
         setError(res.error || "Authentication failed");
-        return;
-      }
-      router.push("/");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const quickLogin = async (demoEmail: string) => {
-    setError(null);
-    setBusy(true);
-    try {
-      const res = await login(demoEmail, "password123");
-      if (!res.ok) {
-        setError(res.error || "Failed to sign in");
         return;
       }
       router.push("/");
@@ -147,22 +130,6 @@ function LoginContent() {
               />
             </div>
 
-            {mode === "register" && (
-              <div>
-                <label className="block font-spectral text-sm font-medium text-[#F5E6D3] mb-1.5">
-                  Role
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full h-10 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-spectral text-sm text-[#F5E6D3] hover:border-[#CA8A04] focus:border-2 focus:border-[#CA8A04] focus:outline-none"
-                >
-                  <option value="participant">Contest Participant</option>
-                  <option value="moderator">Contest Moderator / Organizer</option>
-                </select>
-              </div>
-            )}
-
             {error && (
               <div className="rounded-[4px] border border-[#B91C1C] bg-[#991B1B]/25 px-3 py-2 font-spectral text-xs text-[#F87171]">
                 {error}
@@ -181,51 +148,6 @@ function LoginContent() {
                 : "Create Account"}
             </button>
           </form>
-
-          <div className="border-t border-[#462E22] bg-[#110A07]/70 px-6 py-4 space-y-2.5">
-            <div className="flex items-center gap-1.5 font-cinzel text-[11px] font-semibold uppercase tracking-[1px] text-[#BFA98A]">
-              <Sparkles className="h-3.5 w-3.5 text-[#CA8A04]" />
-              Quick Demo Access
-            </div>
-            <div className="grid gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => quickLogin("samarth@turecode.dev")}
-                className="flex items-center justify-between rounded-[4px] border border-[#462E22] bg-[#1D110B] px-3 py-2 text-left text-xs hover:border-[#CA8A04] hover:bg-[#2A1810] transition-all duration-300 cursor-pointer"
-              >
-                <span className="font-spectral text-[#BFA98A]">
-                  <strong className="text-[#F5E6D3]">Samarth Pai</strong>{" "}
-                  (samarth@turecode.dev)
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#581C87] bg-[#581C87]/35 px-2 py-0.5 font-cinzel text-[10px] uppercase tracking-[1px] text-[#E9D5FF]">
-                  <ShieldCheck className="h-3 w-3" />
-                  Moderator
-                </span>
-              </button>
-
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => quickLogin("priya@turecode.dev")}
-                className="flex items-center justify-between rounded-[4px] border border-[#462E22] bg-[#1D110B] px-3 py-2 text-left text-xs hover:border-[#CA8A04] hover:bg-[#2A1810] transition-all duration-300 cursor-pointer"
-              >
-                <span className="font-spectral text-[#BFA98A]">
-                  <strong className="text-[#F5E6D3]">Priya Patel</strong>{" "}
-                  (priya@turecode.dev)
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-[2px] bg-[#CA8A04]/20 px-2 py-0.5 font-cinzel text-[10px] uppercase tracking-[1px] text-[#CA8A04]">
-                  <UserCheck className="h-3 w-3" />
-                  Participant
-                </span>
-              </button>
-            </div>
-            <p className="font-spectral text-xs text-[#BFA98A]/80 pt-1">
-              Demo join codes:{" "}
-              <code className="font-fira text-[#CA8A04]">ALGO-2026</code>,{" "}
-              <code className="font-fira text-[#CA8A04]">BLITZ-14</code>
-            </p>
-          </div>
         </div>
       </div>
     </main>

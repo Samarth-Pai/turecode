@@ -227,10 +227,11 @@ int main(void) {
         }
 
         if (pid == 0) {
-            // --- Child Process ---
+            // --- Per-Connection Supervisor Child ---
             close(server_fd);
+            signal(SIGCHLD, SIG_DFL);
 
-            // Read the command string before '\n'
+            // Read the command string before '\n' so remaining socket stream is pure STDIN
             char cmd_line[MAX_CMD_LEN];
             ssize_t len = read_command_line(client_fd, cmd_line, sizeof(cmd_line));
             if (len <= 0) {
@@ -255,71 +256,96 @@ int main(void) {
                 _exit(EXIT_FAILURE);
             }
 
-            // Wire STDIN, STDOUT, STDERR directly to client socket
-            if (dup2(client_fd, STDIN_FILENO) == -1 ||
-                dup2(client_fd, STDOUT_FILENO) == -1 ||
-                dup2(client_fd, STDERR_FILENO) == -1) {
-                perror("dup2");
+            pid_t worker_pid = fork();
+            if (worker_pid < 0) {
+                perror("fork(worker)");
                 close(client_fd);
                 _exit(EXIT_FAILURE);
             }
 
-            if (client_fd > STDERR_FILENO) {
-                close(client_fd);
-            }
+            if (worker_pid == 0) {
+                // --- Sandboxed Execution Worker ---
+                if (dup2(client_fd, STDIN_FILENO) == -1 ||
+                    dup2(client_fd, STDOUT_FILENO) == -1 ||
+                    dup2(client_fd, STDERR_FILENO) == -1) {
+                    perror("dup2");
+                    close(client_fd);
+                    _exit(EXIT_FAILURE);
+                }
 
-            // --- Landlock LSM Sandbox Setup ---
-            int ruleset_fd = setup_landlock();
-            if (ruleset_fd < 0) {
-                perror("setup_landlock");
-                _exit(EXIT_FAILURE);
-            }
+                if (client_fd > STDERR_FILENO) {
+                    close(client_fd);
+                }
 
-            // Landlock requires PR_SET_NO_NEW_PRIVS before restricting
-            if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
-                perror("prctl(PR_SET_NO_NEW_PRIVS)");
+                // --- Landlock LSM Sandbox Setup ---
+                int ruleset_fd = setup_landlock();
+                if (ruleset_fd < 0) {
+                    perror("setup_landlock");
+                    _exit(EXIT_FAILURE);
+                }
+
+                if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
+                    perror("prctl(PR_SET_NO_NEW_PRIVS)");
+                    close(ruleset_fd);
+                    _exit(EXIT_FAILURE);
+                }
+
+                if (syscall(SYS_landlock_restrict_self, ruleset_fd, 0) == -1) {
+                    perror("syscall(SYS_landlock_restrict_self)");
+                    close(ruleset_fd);
+                    _exit(EXIT_FAILURE);
+                }
                 close(ruleset_fd);
+
+                // --- Resource & Time Limits (HackerRank-style TLE enforcement) ---
+                // 1. CPU Time Limit: soft 2s (SIGXCPU), hard 3s (SIGKILL)
+                struct rlimit rl_cpu = {
+                    .rlim_cur = 2,
+                    .rlim_max = 3,
+                };
+                if (setrlimit(RLIMIT_CPU, &rl_cpu) == -1) {
+                    perror("setrlimit(RLIMIT_CPU)");
+                    _exit(EXIT_FAILURE);
+                }
+
+                // 2. Wall-Clock Alarm: 3 seconds hard wall-clock timeout (catches sleep / I/O hangs)
+                alarm(3);
+
+                // 3. Address Space (Virtual Memory) Limit
+                int is_java = (strstr(argv[0], "java") != NULL);
+                struct rlimit rl_as = {
+                    .rlim_cur = is_java ? (4096ULL * 1024 * 1024) : (512ULL * 1024 * 1024),
+                    .rlim_max = is_java ? (4096ULL * 1024 * 1024) : (512ULL * 1024 * 1024),
+                };
+                if (setrlimit(RLIMIT_AS, &rl_as) == -1) {
+                    perror("setrlimit(RLIMIT_AS)");
+                    _exit(EXIT_FAILURE);
+                }
+
+                execve(argv[0], argv, NULL);
+                perror("execve");
                 _exit(EXIT_FAILURE);
             }
 
-            // Apply Landlock restrictions to the child process
-            if (syscall(SYS_landlock_restrict_self, ruleset_fd, 0) == -1) {
-                perror("syscall(SYS_landlock_restrict_self)");
-                close(ruleset_fd);
-                _exit(EXIT_FAILURE);
-            }
-            close(ruleset_fd);
-
-            // --- Resource Limits (Security Hardening) ---
-            // 1. CPU Time Limit: 3 seconds hard limit (SIGKILL after 3s CPU time)
-            struct rlimit rl_cpu = {
-                .rlim_cur = 3,
-                .rlim_max = 3,
-            };
-            if (setrlimit(RLIMIT_CPU, &rl_cpu) == -1) {
-                perror("setrlimit(RLIMIT_CPU)");
-                _exit(EXIT_FAILURE);
+            // Supervisor waits for worker to detect TLE (SIGXCPU / SIGALRM / SIGKILL) or crash signals
+            int status = 0;
+            while (waitpid(worker_pid, &status, 0) == -1) {
+                if (errno != EINTR) break;
             }
 
-            // 2. Address Space (Virtual Memory) Limit
-            // Java HotSpot requires ~2-4GB virtual reservation for Compressed OOPs and JImage metadata.
-            // Non-JVM runtimes (C, C++, Python) are capped at 512 MB.
-            int is_java = (strstr(argv[0], "java") != NULL);
-            struct rlimit rl_as = {
-                .rlim_cur = is_java ? (4096ULL * 1024 * 1024) : (512ULL * 1024 * 1024),
-                .rlim_max = is_java ? (4096ULL * 1024 * 1024) : (512ULL * 1024 * 1024),
-            };
-            if (setrlimit(RLIMIT_AS, &rl_as) == -1) {
-                perror("setrlimit(RLIMIT_AS)");
-                _exit(EXIT_FAILURE);
+            if (WIFSIGNALED(status)) {
+                int sig = WTERMSIG(status);
+                if (sig == SIGXCPU || sig == SIGKILL || sig == SIGALRM) {
+                    dprintf(client_fd, "\n__SANDBOX_TLE__\n");
+                } else {
+                    dprintf(client_fd, "\n__SANDBOX_RUNTIME_SIGNAL__:%d\n", sig);
+                }
+            } else if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+                dprintf(client_fd, "\n__SANDBOX_EXIT_CODE__:%d\n", WEXITSTATUS(status));
             }
 
-            // Execute the target binary
-            execve(argv[0], argv, NULL);
-
-            // If execve fails
-            perror("execve");
-            _exit(EXIT_FAILURE);
+            close(client_fd);
+            _exit(EXIT_SUCCESS);
         }
 
         // --- Parent Process ---

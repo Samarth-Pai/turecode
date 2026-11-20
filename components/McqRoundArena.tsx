@@ -31,12 +31,49 @@ export function McqRoundArena({
   scheduleStatus,
 }: McqRoundArenaProps) {
   const { currentUser } = useUser();
+  const answersStorageKey = `turecode_mcq_answers_${contestId}_${round.id}`;
+  const flaggedStorageKey = `turecode_mcq_flagged_${contestId}_${round.id}`;
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(answersStorageKey);
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [flagged, setFlagged] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(flaggedStorageKey);
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submittedNotice, setSubmittedNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(answersStorageKey, JSON.stringify(answers));
+    } catch {
+      // ignore
+    }
+  }, [answers, answersStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(flaggedStorageKey, JSON.stringify(flagged));
+    } catch {
+      // ignore
+    }
+  }, [flagged, flaggedStorageKey]);
 
   // Track exact per-question view time for solve-time evaluation
   const questionStartMsRef = useRef<Record<string, number>>({});
@@ -131,7 +168,8 @@ export function McqRoundArena({
         for (const s of subs) {
           map[s.questionId] = s.selectedOptionId;
         }
-        setAnswers(map);
+        // Preserve any locally selected options while backfilling server submissions
+        setAnswers((prev) => ({ ...map, ...prev }));
         if (subs.length > 0) {
           setSubmittedNotice(
             `Responses recorded (${subs.length} question${subs.length > 1 ? "s" : ""} submitted).`

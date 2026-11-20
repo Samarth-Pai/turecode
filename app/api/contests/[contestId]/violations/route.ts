@@ -4,9 +4,11 @@ import { SESSION_COOKIE_NAME } from "@/lib/auth";
 import {
   getProctoringViolations,
   getSessionData,
+  readDb,
   recordProctoringViolation,
   resetProctoringViolation,
 } from "@/lib/db";
+import { getRoundStatus } from "@/lib/types";
 
 export async function GET(
   request: NextRequest,
@@ -48,6 +50,21 @@ export async function POST(
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Only count violations while at least one round in this contest is currently ongoing (ACTIVE)
+    const db = await readDb();
+    const contest = db.contests.find((c) => c.id === contestId);
+    const hasOngoingRound = Boolean(
+      contest?.rounds.some((r) => getRoundStatus(r) === "ACTIVE")
+    );
+
+    if (!hasOngoingRound) {
+      const existing = await getProctoringViolations(contestId, userId);
+      return NextResponse.json({
+        ignored: true,
+        count: existing[0]?.count ?? 0,
+      });
     }
 
     const res = await recordProctoringViolation(contestId, userId, reason);

@@ -167,20 +167,24 @@ export async function readDb(): Promise<DatabaseSchema> {
   return fetchSnapshot(db);
 }
 
+let mutateQueue: Promise<unknown> = Promise.resolve();
+
 export async function mutateDb<T>(
   mutator: (db: DatabaseSchema) => Promise<T> | T
 ): Promise<T> {
-  const db = await getDb();
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(948271)`);
+  const run = mutateQueue.then(async () => {
+    const db = await getDb();
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await db.transaction(async (tx) => {
+          const snapshot = await fetchSnapshot(tx);
+          const prevQuestionIds = new Set(snapshot.questions.map((q) => q.id));
+          const prevContestIds = new Set(snapshot.contests.map((c) => c.id));
+          const prevMcqIds = new Set(snapshot.mcqSubmissions.map((m) => m.id));
+          const prevCodingIds = new Set(snapshot.codingSubmissions.map((c) => c.id));
 
-    const snapshot = await fetchSnapshot(tx);
-    const prevQuestionIds = new Set(snapshot.questions.map((q) => q.id));
-    const prevContestIds = new Set(snapshot.contests.map((c) => c.id));
-    const prevMcqIds = new Set(snapshot.mcqSubmissions.map((m) => m.id));
-    const prevCodingIds = new Set(snapshot.codingSubmissions.map((c) => c.id));
-
-    const result = await mutator(snapshot);
+          const result = await mutator(snapshot);
 
     // Sync questions
     const nextQuestionIds = new Set(snapshot.questions.map((q) => q.id));
@@ -304,8 +308,24 @@ export async function mutateDb<T>(
         .onConflictDoNothing();
     }
 
-    return result;
+          return result;
+        });
+      } catch (err: unknown) {
+        const code =
+          typeof err === "object" && err !== null && "code" in err
+            ? String((err as { code?: unknown }).code)
+            : "";
+        if (code === "40001" && attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 50 * attempt));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error("Transaction retry limit exceeded");
   });
+  mutateQueue = run.catch(() => undefined);
+  return run;
 }
 
 // ---------- Auth, Enrollment, Attempts, Overrides & Proctoring Helpers ----------

@@ -109,7 +109,16 @@ export function CodingRoundArena({
   const [wordWrap, setWordWrap] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const draftsStorageKey = `turecode_code_drafts_${contestId}_${round.id}`;
+  const [drafts, setDrafts] = useState<Record<string, string>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(draftsStorageKey);
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  });
   const [showHead, setShowHead] = useState(false);
   const [showTail, setShowTail] = useState(false);
 
@@ -241,7 +250,17 @@ export function CodingRoundArena({
 
   const setCurrentCode = (val: string) => {
     if (!draftKey) return;
-    setDrafts((prev) => ({ ...prev, [draftKey]: val }));
+    setDrafts((prev) => {
+      const next = { ...prev, [draftKey]: val };
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(draftsStorageKey, JSON.stringify(next));
+        } catch {
+          // ignore storage quota errors
+        }
+      }
+      return next;
+    });
   };
 
   const handleLoadSampleSolution = () => {

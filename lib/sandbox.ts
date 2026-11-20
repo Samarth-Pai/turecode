@@ -18,6 +18,14 @@ export const WORKSPACES_ROOT = "/tmp/workspaces";
 export const DAEMON_SRC = path.join(process.cwd(), "sandbox", "daemon.c");
 export const DAEMON_BIN = path.join(process.cwd(), "sandbox", "daemon");
 
+/** HackerRank-style per-test-case execution time limits (ms) by language. */
+export const LANGUAGE_TIME_LIMIT_MS: Record<LanguageId, number> = {
+  c: 2000,
+  cpp: 2000,
+  java: 2500,
+  python: 3000,
+};
+
 export interface SandboxRunResponse {
   status: "success" | "error";
   output: string;
@@ -239,8 +247,15 @@ export class SandboxedExecutor {
   async executeSocket(
     execCmd: string[],
     inputData: string,
-    timeoutMs = 5000
-  ): Promise<{ ok: boolean; output: string; executionTimeMs: number; timedOut: boolean; error?: string }> {
+    timeoutMs = 2500
+  ): Promise<{
+    ok: boolean;
+    output: string;
+    executionTimeMs: number;
+    timedOut: boolean;
+    runtimeError: boolean;
+    error?: string;
+  }> {
     const start = performance.now();
 
     return new Promise((resolve) => {
@@ -251,13 +266,44 @@ export class SandboxedExecutor {
       let settled = false;
       let timedOut = false;
 
-      const finish = (ok: boolean, error?: string) => {
+      const finish = (socketOk: boolean, socketErr?: string) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
         const executionTimeMs = Math.round((performance.now() - start) * 100) / 100;
-        const output = Buffer.concat(chunks).toString("utf-8");
-        resolve({ ok, output, executionTimeMs, timedOut, error });
+        let output = Buffer.concat(chunks).toString("utf-8");
+        let ok = socketOk;
+        let runtimeError = false;
+        let error = socketErr;
+
+        if (output.includes("__SANDBOX_TLE__")) {
+          output = output.replace(/\n?__SANDBOX_TLE__\n?/g, "");
+          timedOut = true;
+          ok = false;
+          error = "Time Limit Exceeded";
+        }
+
+        if (output.includes("__SANDBOX_RUNTIME_SIGNAL__:")) {
+          output = output.replace(/\n?__SANDBOX_RUNTIME_SIGNAL__:\d+\n?/g, "");
+          runtimeError = true;
+          ok = false;
+          error = error || "Runtime Error (terminated by signal)";
+        }
+
+        if (output.includes("__SANDBOX_EXIT_CODE__:")) {
+          output = output.replace(/\n?__SANDBOX_EXIT_CODE__:\d+\n?/g, "");
+          runtimeError = true;
+          ok = false;
+          error = error || "Runtime Error (non-zero exit status)";
+        }
+
+        if (executionTimeMs >= timeoutMs) {
+          timedOut = true;
+          ok = false;
+          error = "Time Limit Exceeded";
+        }
+
+        resolve({ ok, output, executionTimeMs, timedOut, runtimeError, error });
       };
 
       const timer = setTimeout(() => {
@@ -326,7 +372,8 @@ export class SandboxedExecutor {
         };
       }
 
-      const execRes = await this.executeSocket(prepared.execCmd, inputData);
+      const timeLimitMs = LANGUAGE_TIME_LIMIT_MS[language] ?? 2500;
+      const execRes = await this.executeSocket(prepared.execCmd, inputData, timeLimitMs);
       if (execRes.timedOut) {
         return {
           status: "error",
@@ -406,36 +453,31 @@ export class SandboxedExecutor {
         };
       }
 
-      // Execute all testcases concurrently over /tmp/sandbox.sock
+      // Execute all testcases concurrently over /tmp/sandbox.sock with per-testcase TLE enforcement
+      const timeLimitMs = LANGUAGE_TIME_LIMIT_MS[language] ?? 2500;
       const results = await Promise.all(
         testCases.map(async (tc): Promise<CodingTestCaseResult & { _points: number }> => {
-          const res = await this.executeSocket(prepared.execCmd, tc.input);
+          const res = await this.executeSocket(prepared.execCmd, tc.input, timeLimitMs);
           const actualNorm = normalizeOutput(res.output);
           const expectedNorm = normalizeOutput(tc.expectedOutput);
 
           let tcStatus: CodingTestCaseResult["status"] = "Wrong Answer";
           let passed = false;
 
-          if (res.timedOut || (!res.ok && res.executionTimeMs >= 2900)) {
+          if (res.timedOut || res.executionTimeMs >= timeLimitMs) {
             tcStatus = "Time Limit Exceeded";
           } else if (
+            res.runtimeError ||
             !res.ok ||
             actualNorm.includes("Traceback (most recent call last)") ||
             actualNorm.includes("Exception in thread") ||
             actualNorm.includes("Segmentation fault") ||
             actualNorm.includes("Aborted (core dumped)")
           ) {
-            if (actualNorm === expectedNorm && res.ok) {
-              passed = true;
-              tcStatus = "Passed";
-            } else {
-              tcStatus = "Runtime Error";
-            }
+            tcStatus = "Runtime Error";
           } else if (actualNorm === expectedNorm) {
             passed = true;
             tcStatus = "Passed";
-          } else if (res.executionTimeMs >= 2950 && actualNorm === "") {
-            tcStatus = "Time Limit Exceeded";
           }
 
           return {
@@ -470,12 +512,12 @@ export class SandboxedExecutor {
       let status: CodingVerdict;
       if (passedCount === testCases.length && testCases.length > 0) {
         status = "Accepted";
-      } else if (passedCount > 0) {
-        status = "Partial";
       } else if (hasTle) {
         status = "Time Limit Exceeded";
       } else if (hasRuntimeErr) {
         status = "Runtime Error";
+      } else if (passedCount > 0) {
+        status = "Partial";
       } else {
         status = "Wrong Answer";
       }

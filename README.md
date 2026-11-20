@@ -97,7 +97,20 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `bun run db:generate` | Generate SQL migration files into `./drizzle` |
 | `bun run db:migrate` | Apply generated Drizzle migrations |
 | `bun run db:studio` | Launch Drizzle Studio visual database browser |
-| `bun run db:psql` | Open an interactive `psql` shell to `turecode` on port `5433` |
+| `bun run db:psql` | Open an interactive `psql` shell (`$DATABASE_URL` or local port `5433`) |
+| `bun run db:dump` | Export all tables to `turecode-backup.json` (or pass a custom path) |
+| `bun run db:restore` | Restore all tables from `turecode-backup.json` (or pass a custom path) |
+| `bun run db:clear` | Delete all rows from all tables (combine with `bun run db:seed` to reset) |
+
+### Moving Your Database to Another Machine
+
+```bash
+# 1. On the source machine (exports to turecode-backup.json):
+bun run db:dump
+
+# 2. Copy turecode-backup.json to the target machine, then run:
+bun run db:restore
+```
 
 ---
 

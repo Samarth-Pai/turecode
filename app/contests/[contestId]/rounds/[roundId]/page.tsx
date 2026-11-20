@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { CodingRoundArena } from "@/components/CodingRoundArena";
 import { McqRoundArena } from "@/components/McqRoundArena";
-import { StrictModeGuard } from "@/components/StrictModeGuard";
 import { useUser } from "@/components/UserContext";
 import type {
   CodingQuestion,
@@ -151,41 +150,33 @@ function RoundArenaContent() {
           : "flex flex-1 flex-col"
       }
     >
-      <StrictModeGuard
-        contestId={contest.id}
-        contestTitle={contest.title}
-        enabled={Boolean(contest.strictMode)}
-        isModerator={isModerator}
-        userId={currentUser.id}
-      >
-        <div className="flex min-h-0 flex-1 flex-col">
-          {scheduleStatus !== "ACTIVE" && isModerator && (
-            <div className="border-b border-[#CA8A04]/30 bg-[#2A1810] px-4 py-2 text-center font-spectral text-xs text-[#CA8A04]">
-              Moderator Preview Mode — This round is currently <strong>{scheduleStatus}</strong>{" "}
-              ({new Date(round.startTime).toLocaleString()} →{" "}
-              {new Date(round.endTime).toLocaleString()}).
-            </div>
-          )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {scheduleStatus !== "ACTIVE" && isModerator && (
+          <div className="border-b border-[#CA8A04]/30 bg-[#2A1810] px-4 py-2 text-center font-spectral text-xs text-[#CA8A04]">
+            Moderator Preview Mode — This round is currently <strong>{scheduleStatus}</strong>{" "}
+            ({new Date(round.startTime).toLocaleString()} →{" "}
+            {new Date(round.endTime).toLocaleString()}).
+          </div>
+        )}
 
-          {round.type === "mcq" ? (
-            <McqRoundArena
-              contestId={contest.id}
-              contestTitle={contest.title}
-              round={round}
-              questions={questions.filter((q): q is MCQQuestion => q.kind === "mcq")}
-              scheduleStatus={scheduleStatus}
-            />
-          ) : (
-            <CodingRoundArena
-              contestId={contest.id}
-              contestTitle={contest.title}
-              round={round}
-              questions={questions.filter((q): q is CodingQuestion => q.kind === "coding")}
-              scheduleStatus={scheduleStatus}
-            />
-          )}
-        </div>
-      </StrictModeGuard>
+        {round.type === "mcq" ? (
+          <McqRoundArena
+            contestId={contest.id}
+            contestTitle={contest.title}
+            round={round}
+            questions={questions.filter((q): q is MCQQuestion => q.kind === "mcq")}
+            scheduleStatus={scheduleStatus}
+          />
+        ) : (
+          <CodingRoundArena
+            contestId={contest.id}
+            contestTitle={contest.title}
+            round={round}
+            questions={questions.filter((q): q is CodingQuestion => q.kind === "coding")}
+            scheduleStatus={scheduleStatus}
+          />
+        )}
+      </div>
     </div>
   );
 }

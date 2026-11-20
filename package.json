@@ -3,20 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 0.0.0.0",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "sandbox:build": "gcc -O2 sandbox/daemon.c -o sandbox/daemon",
     "db:start": "bun run lib/seed-cli.ts",
     "db:stop": "pg_ctl -D .pgdata stop -m fast",
     "db:seed": "bun run lib/seed-cli.ts",
-    "db:push": "drizzle-kit push",
+    "db:push": "bun run lib/push-cli.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:psql": "psql -h 127.0.0.1 -p 5433 -d turecode"
+    "db:psql": "bun -e 'import { spawnSync } from \"node:child_process\"; process.exit(spawnSync(\"psql\", [process.env.DATABASE_URL || \"postgresql://127.0.0.1:5433/turecode\"], { stdio: \"inherit\" }).status ?? 1);'",
+    "db:dump": "bun run lib/dump-cli.ts",
+    "db:restore": "bun run lib/restore-cli.ts",
+    "db:clear": "bun run lib/clear-cli.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",

@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  Calendar,
   CheckCircle2,
   Clock,
   Copy,
@@ -12,9 +13,17 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useState } from "react";
-import { LeaderboardPanel } from "@/components/LeaderboardPanel";
 import { useUser } from "@/components/UserContext";
 import { getRoundStatus, type Contest, type Question, type Round } from "@/lib/types";
+
+function toLocalInputValue(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+}
 
 interface PopulatedRound extends Round {
   questions: Question[];
@@ -45,13 +54,62 @@ function ContestLobbyContent() {
   const { currentUser, joinContestByCode } = useUser();
 
   const [data, setData] = useState<ContestDetailPayload | null>(null);
-  const [tab, setTab] = useState<"rounds" | "leaderboard">("rounds");
   const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [editingRoundId, setEditingRoundId] = useState<string | null>(null);
+  const [schedStartLocal, setSchedStartLocal] = useState("");
+  const [schedEndLocal, setSchedEndLocal] = useState("");
+  const [schedDuration, setSchedDuration] = useState(60);
+  const [schedBusy, setSchedBusy] = useState(false);
+  const [schedNotice, setSchedNotice] = useState<string | null>(null);
+
+  const openScheduleEditor = (round: Round) => {
+    if (editingRoundId === round.id) {
+      setEditingRoundId(null);
+      setSchedNotice(null);
+      return;
+    }
+    setEditingRoundId(round.id);
+    setSchedStartLocal(toLocalInputValue(round.startTime));
+    setSchedEndLocal(toLocalInputValue(round.endTime));
+    setSchedDuration(round.durationMinutes);
+    setSchedNotice(null);
+  };
+
+  const patchRoundSchedule = async (
+    roundId: string,
+    payload: Record<string, unknown>,
+    msg: string
+  ) => {
+    setSchedBusy(true);
+    setSchedNotice(null);
+    try {
+      const res = await fetch(`/api/contests/${contestId}/rounds/${roundId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setSchedNotice(json.error || "Failed to update round schedule");
+      } else {
+        if (json.round) {
+          setSchedStartLocal(toLocalInputValue(json.round.startTime));
+          setSchedEndLocal(toLocalInputValue(json.round.endTime));
+          setSchedDuration(json.round.durationMinutes);
+        }
+        setSchedNotice(msg);
+        await reloadContest();
+      }
+    } finally {
+      setSchedBusy(false);
+    }
+  };
 
   const reloadContest = useCallback(async () => {
     const res = await fetch(`/api/contests/${contestId}`, { cache: "no-store" });
@@ -113,7 +171,7 @@ function ContestLobbyContent() {
     );
   }
 
-  const { contest, isEnrolled, questionBank } = data;
+  const { contest, isEnrolled } = data;
   const isModerator = currentUser?.role === "moderator";
 
   return (
@@ -180,32 +238,8 @@ function ContestLobbyContent() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#2A1810] pt-4">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTab("rounds")}
-              className={`rounded-[2px] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
-                tab === "rounds"
-                  ? "bg-[#CA8A04] text-[#110A07]"
-                  : "border border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:text-[#F5E6D3]"
-              }`}
-            >
-              Contest Rounds ({contest.rounds.length})
-            </button>
-
-            {isModerator && (
-              <button
-                type="button"
-                onClick={() => setTab("leaderboard")}
-                className={`rounded-[2px] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[1px] transition-all duration-300 cursor-pointer ${
-                  tab === "leaderboard"
-                    ? "bg-[#CA8A04] text-[#110A07]"
-                    : "border border-[#462E22] bg-[#110A07] text-[#BFA98A] hover:text-[#F5E6D3]"
-                }`}
-              >
-                Moderator Leaderboard
-              </button>
-            )}
+          <div className="font-cinzel text-xs font-semibold uppercase tracking-[1px] text-[#CA8A04]">
+            Contest Rounds ({contest.rounds.length})
           </div>
 
           <div className="font-spectral text-xs text-[#BFA98A]">
@@ -274,61 +308,72 @@ function ContestLobbyContent() {
         </div>
       ) : null}
 
-      {/* Rounds or Moderator Leaderboard */}
-      {tab === "rounds" || !isModerator ? (
-        <div className="space-y-4">
-          {contest.rounds.length === 0 ? (
-            <div className="rounded-[4px] border border-dashed border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
-              No rounds scheduled in this contest yet.
-            </div>
-          ) : (
-            contest.rounds.map((round) => {
-              const status = getRoundStatus(round, nowMs);
-              const totalPoints = round.questions.reduce((acc, q) => acc + q.points, 0);
-              const unlocked = Boolean(currentUser) && (isEnrolled || isModerator);
-              const canEnter = unlocked && (status === "ACTIVE" || isModerator);
+      {/* Contest Rounds */}
+      <div className="space-y-4">
+        {contest.rounds.length === 0 ? (
+          <div className="rounded-[4px] border border-dashed border-[#462E22] bg-[#1D110B] p-10 text-center font-spectral text-sm text-[#BFA98A]">
+            No rounds scheduled in this contest yet.
+          </div>
+        ) : (
+          contest.rounds.map((round) => {
+            const status = getRoundStatus(round, nowMs);
+            const totalPoints = round.questions.reduce((acc, q) => acc + q.points, 0);
+            const unlocked = Boolean(currentUser) && (isEnrolled || isModerator);
+            const canEnter = unlocked && (status === "ACTIVE" || isModerator);
+            const isEditingSchedule = isModerator && editingRoundId === round.id;
 
-              return (
-                <div
-                  key={round.id}
-                  className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] hover:border-[#CA8A04]/50 transition-all duration-300 space-y-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`rounded-[2px] px-2.5 py-0.5 font-cinzel text-[10px] font-semibold uppercase tracking-[1px] ${
-                            round.type === "coding"
-                              ? "border border-[#581C87] bg-[#581C87]/35 text-[#E9D5FF]"
-                              : "border border-[#462E22] bg-[#2A1810] text-[#CA8A04]"
-                          }`}
-                        >
-                          {round.type === "coding"
-                            ? "Coding (C / C++ / Java / Python)"
-                            : "MCQ Round"}
-                        </span>
-                        <span
-                          className={`rounded-[2px] px-2.5 py-0.5 font-cinzel text-[10px] uppercase tracking-[1px] ${
-                            status === "ACTIVE"
-                              ? "bg-[#22C55E]/20 text-[#22C55E]"
-                              : status === "UPCOMING"
-                              ? "bg-[#CA8A04]/20 text-[#CA8A04]"
-                              : "bg-[#991B1B]/25 text-[#F87171]"
-                          }`}
-                        >
-                          {status}
-                        </span>
-                      </div>
-
-                      <h2 className="font-cinzel text-xl font-semibold text-[#F5E6D3]">
-                        {round.title}
-                      </h2>
-                      <p className="font-spectral text-sm text-[#BFA98A]">
-                        {round.description}
-                      </p>
+            return (
+              <div
+                key={round.id}
+                className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 shadow-[0_2px_8px_rgba(202,138,4,0.2)] hover:border-[#CA8A04]/50 transition-all duration-300 space-y-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-[2px] px-2.5 py-0.5 font-cinzel text-[10px] font-semibold uppercase tracking-[1px] ${
+                          round.type === "coding"
+                            ? "border border-[#581C87] bg-[#581C87]/35 text-[#E9D5FF]"
+                            : "border border-[#462E22] bg-[#2A1810] text-[#CA8A04]"
+                        }`}
+                      >
+                        {round.type === "coding"
+                          ? "Coding (C / C++ / Java / Python)"
+                          : "MCQ Round"}
+                      </span>
+                      <span
+                        className={`rounded-[2px] px-2.5 py-0.5 font-cinzel text-[10px] uppercase tracking-[1px] ${
+                          status === "ACTIVE"
+                            ? "bg-[#22C55E]/20 text-[#22C55E]"
+                            : status === "UPCOMING"
+                            ? "bg-[#CA8A04]/20 text-[#CA8A04]"
+                            : "bg-[#991B1B]/25 text-[#F87171]"
+                        }`}
+                      >
+                        {status}
+                      </span>
                     </div>
 
-                    <div className="text-right space-y-2 shrink-0">
+                    <h2 className="font-cinzel text-xl font-semibold text-[#F5E6D3]">
+                      {round.title}
+                    </h2>
+                    <p className="font-spectral text-sm text-[#BFA98A]">
+                      {round.description}
+                    </p>
+                  </div>
+
+                  <div className="text-right space-y-2 shrink-0">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {isModerator && (
+                        <button
+                          type="button"
+                          onClick={() => openScheduleEditor(round)}
+                          className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-2.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#CA8A04] transition-colors cursor-pointer"
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                          {isEditingSchedule ? "Hide Schedule" : "Change Schedule"}
+                        </button>
+                      )}
                       {canEnter ? (
                         <Link
                           href={`/contests/${contest.id}/rounds/${round.id}`}
@@ -355,46 +400,155 @@ function ContestLobbyContent() {
                             : "Round Ended"}
                         </button>
                       )}
+                    </div>
 
-                      <div className="flex items-center justify-end gap-1.5 font-fira text-xs text-[#BFA98A]">
-                        <Clock className="h-3.5 w-3.5 text-[#CA8A04]" />
-                        {status === "UPCOMING"
-                          ? `Starts in ${formatRemaining(round.startTime, nowMs)}`
-                          : status === "ACTIVE"
-                          ? `Ends in ${formatRemaining(round.endTime, nowMs)}`
-                          : `Ended ${new Date(round.endTime).toLocaleString()}`}
-                      </div>
+                    <div className="flex items-center justify-end gap-1.5 font-fira text-xs text-[#BFA98A]">
+                      <Clock className="h-3.5 w-3.5 text-[#CA8A04]" />
+                      {status === "UPCOMING"
+                        ? `Starts in ${formatRemaining(round.startTime, nowMs)}`
+                        : status === "ACTIVE"
+                        ? `Ends in ${formatRemaining(round.endTime, nowMs)}`
+                        : `Ended ${new Date(round.endTime).toLocaleString()}`}
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap items-center gap-4 border-t border-[#2A1810] pt-3 font-fira text-xs text-[#BFA98A]">
-                    <span>{round.questions.length} Questions</span>
-                    {isModerator && (
-                      <>
-                        <span>•</span>
-                        <span>{totalPoints} Max Points</span>
-                      </>
-                    )}
-                    <span>•</span>
-                    <span>Duration: {round.durationMinutes} mins</span>
-                    <span>•</span>
-                    <span>
-                      {new Date(round.startTime).toLocaleString()} →{" "}
-                      {new Date(round.endTime).toLocaleString()}
-                    </span>
-                  </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-      ) : (
-        <LeaderboardPanel
-          contestId={contest.id}
-          isModerator={true}
-          questions={questionBank}
-        />
-      )}
+
+                {isEditingSchedule && (
+                  <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-cinzel text-xs font-bold uppercase tracking-[1px] text-[#CA8A04]">
+                        Edit Round Schedule
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={schedBusy}
+                          onClick={() =>
+                            patchRoundSchedule(
+                              round.id,
+                              { schedulePreset: "start_now" },
+                              "Schedule updated: Live Now (24h)"
+                            )
+                          }
+                          className="rounded-[2px] border border-[#22C55E]/40 bg-[#22C55E]/10 px-2.5 py-1 font-cinzel text-[10px] font-bold uppercase text-[#22C55E] hover:bg-[#22C55E]/20 cursor-pointer"
+                        >
+                          Go Live Now (24h)
+                        </button>
+                        <button
+                          type="button"
+                          disabled={schedBusy}
+                          onClick={() =>
+                            patchRoundSchedule(
+                              round.id,
+                              { schedulePreset: "upcoming_tomorrow" },
+                              "Schedule updated: Upcoming Tomorrow"
+                            )
+                          }
+                          className="rounded-[2px] border border-[#CA8A04]/50 bg-[#CA8A04]/15 px-2.5 py-1 font-cinzel text-[10px] font-bold uppercase text-[#CA8A04] hover:bg-[#CA8A04]/25 cursor-pointer"
+                        >
+                          Schedule Tomorrow
+                        </button>
+                        <button
+                          type="button"
+                          disabled={schedBusy}
+                          onClick={() =>
+                            patchRoundSchedule(
+                              round.id,
+                              { schedulePreset: "end_now" },
+                              "Schedule updated: Round Ended"
+                            )
+                          }
+                          className="rounded-[2px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
+                        >
+                          End Round Now
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-4 items-end">
+                      <div>
+                        <label className="block font-cinzel text-[10px] font-semibold uppercase tracking-[0.8px] text-[#BFA98A] mb-1">
+                          Start Time
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={schedStartLocal}
+                          onChange={(e) => setSchedStartLocal(e.target.value)}
+                          className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-cinzel text-[10px] font-semibold uppercase tracking-[0.8px] text-[#BFA98A] mb-1">
+                          End Time
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={schedEndLocal}
+                          onChange={(e) => setSchedEndLocal(e.target.value)}
+                          className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-cinzel text-[10px] font-semibold uppercase tracking-[0.8px] text-[#BFA98A] mb-1">
+                          Duration (mins)
+                        </label>
+                        <input
+                          type="number"
+                          min={5}
+                          value={schedDuration}
+                          onChange={(e) => setSchedDuration(Number(e.target.value) || 30)}
+                          className="w-full rounded-[4px] border border-[#462E22] bg-[#1D110B] px-2.5 py-1.5 font-fira text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        disabled={schedBusy}
+                        onClick={() =>
+                          patchRoundSchedule(
+                            round.id,
+                            {
+                              startTime: new Date(schedStartLocal).toISOString(),
+                              endTime: new Date(schedEndLocal).toISOString(),
+                              durationMinutes: schedDuration,
+                            },
+                            "Round schedule saved."
+                          )
+                        }
+                        className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-2 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] disabled:opacity-50 transition-colors cursor-pointer"
+                      >
+                        Save Schedule
+                      </button>
+                    </div>
+
+                    {schedNotice && (
+                      <div className="rounded-[4px] border border-[#22C55E]/40 bg-[#22C55E]/10 px-3 py-1.5 font-spectral text-xs text-[#22C55E]">
+                        {schedNotice}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-4 border-t border-[#2A1810] pt-3 font-fira text-xs text-[#BFA98A]">
+                  <span>{round.questions.length} Questions</span>
+                  {isModerator && (
+                    <>
+                      <span>•</span>
+                      <span>{totalPoints} Max Points</span>
+                    </>
+                  )}
+                  <span>•</span>
+                  <span>Duration: {round.durationMinutes} mins</span>
+                  <span>•</span>
+                  <span>
+                    {new Date(round.startTime).toLocaleString()} →{" "}
+                    {new Date(round.endTime).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
     </main>
   );
 }

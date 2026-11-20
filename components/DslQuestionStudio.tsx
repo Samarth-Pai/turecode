@@ -1,7 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import { Download, FileArchive, Upload } from "lucide-react";
+import React, { useRef, useState } from "react";
 import { compileDslToStubs, DSL_PRESETS, type DslCompileResult } from "@/lib/dsl";
+import {
+  buildSampleHackerRankZip,
+  parseHackerRankTestCaseZip,
+} from "@/lib/testcase-zip";
 import {
   SUPPORTED_LANGUAGES,
   type CodeStubBundle,
@@ -70,6 +75,75 @@ export function DslQuestionStudio({
   const [saveMessage, setSaveMessage] = useState<{ type: "ok" | "err"; text: string } | null>(
     null
   );
+
+  const zipInputRef = useRef<HTMLInputElement | null>(null);
+  const [zipSampleCount, setZipSampleCount] = useState(1);
+  const [zipPointsPerCase, setZipPointsPerCase] = useState(25);
+  const [zipImportMode, setZipImportMode] = useState<"replace" | "append">("replace");
+  const [zipMessage, setZipMessage] = useState<{ type: "ok" | "err"; text: string } | null>(
+    null
+  );
+
+  const handleZipFileSelect = async (file: File | undefined) => {
+    if (!file) return;
+    setZipMessage(null);
+    try {
+      const buffer = await file.arrayBuffer();
+      const report = await parseHackerRankTestCaseZip(buffer, {
+        sampleCount: zipSampleCount,
+        pointsPerCase: zipPointsPerCase,
+      });
+
+      setTestCases((prev) =>
+        zipImportMode === "replace"
+          ? report.testCases
+          : [...prev, ...report.testCases]
+      );
+
+      const pairSummary = report.pairs
+        .slice(0, 4)
+        .map((p) => `input${p.key}/output${p.key}`)
+        .join(", ");
+      const more =
+        report.pairs.length > 4 ? ` (+${report.pairs.length - 4} more)` : "";
+      const warning =
+        report.unmatchedFiles.length > 0
+          ? ` • Ignored ${report.unmatchedFiles.length} unmatched file(s)`
+          : "";
+
+      setZipMessage({
+        type: "ok",
+        text: `Imported ${report.testCases.length} test case(s) from "${file.name}" (${pairSummary}${more})${warning}.`,
+      });
+    } catch (err: unknown) {
+      setZipMessage({
+        type: "err",
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to parse HackerRank test case ZIP archive.",
+      });
+    } finally {
+      if (zipInputRef.current) {
+        zipInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDownloadSampleZip = () => {
+    const zipBytes = buildSampleHackerRankZip();
+    const copy = new Uint8Array(zipBytes.byteLength);
+    copy.set(zipBytes);
+    const blob = new Blob([copy], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "hackerrank-testcases-sample.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const runCompileDsl = async (src: string) => {
     setCompiling(true);
@@ -469,23 +543,134 @@ export function DslQuestionStudio({
 
       {/* Test Cases + Sample Explanation Builder */}
       <div className="rounded-[4px] border border-[#462E22] bg-[#1D110B] p-6 space-y-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h4 className="font-cinzel text-sm font-bold text-[#F5E6D3]">
               Test Cases ({testCases.length}) — Total{" "}
               {testCases.reduce((s, tc) => s + Number(tc.points || 0), 0)} pts
             </h4>
             <p className="font-spectral text-xs text-[#BFA98A]">
-              Sample test cases (and their explanations) are shown to participants; hidden cases are evaluated privately.
+              Upload a single HackerRank-style <code className="font-fira text-[#CA8A04]">.zip</code> (<code className="font-fira text-[#F5E6D3]">input00.txt</code>, <code className="font-fira text-[#F5E6D3]">output00.txt</code>, <code className="font-fira text-[#F5E6D3]">input01.txt</code>, ...) or add test cases manually.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={addTestCase}
-            className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
-          >
-            + Add Test Case
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadSampleZip}
+              className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] transition-colors cursor-pointer"
+              title="Download a sample HackerRank testcases .zip template"
+            >
+              <Download className="h-3.5 w-3.5 text-[#CA8A04]" />
+              Sample .zip Template
+            </button>
+            <button
+              type="button"
+              onClick={addTestCase}
+              className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3.5 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#F5E6D3] hover:border-[#CA8A04] transition-colors duration-300 cursor-pointer"
+            >
+              + Add Test Case
+            </button>
+          </div>
+        </div>
+
+        {/* HackerRank Test Case ZIP Uploader */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropped = e.dataTransfer.files?.[0];
+            if (dropped) void handleZipFileSelect(dropped);
+          }}
+          className="rounded-[4px] border border-dashed border-[#CA8A04]/50 bg-[#160C08] p-4 space-y-3"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] border border-[#CA8A04]/40 bg-[#2A1810] text-[#CA8A04]">
+                <FileArchive className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#F5E6D3]">
+                  HackerRank Test Case Archive (.zip)
+                </div>
+                <p className="font-spectral text-xs text-[#BFA98A]">
+                  Supports <code className="font-fira text-[11px] text-[#CA8A04]">input00.txt</code> + <code className="font-fira text-[11px] text-[#CA8A04]">output00.txt</code> (or <code className="font-fira text-[11px] text-[#CA8A04]">.text</code>), <code className="font-fira text-[11px] text-[#CA8A04]">input/input00.txt</code> + <code className="font-fira text-[11px] text-[#CA8A04]">output/output00.txt</code>, or <code className="font-fira text-[11px] text-[#CA8A04]">00.in</code> + <code className="font-fira text-[11px] text-[#CA8A04]">00.out</code>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <label className="flex items-center gap-1.5 font-cinzel text-[10px] uppercase tracking-[0.5px] text-[#BFA98A]">
+                First N as Sample:
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={zipSampleCount}
+                  onChange={(e) =>
+                    setZipSampleCount(Math.max(0, Number(e.target.value) || 0))
+                  }
+                  className="w-14 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2 py-1 font-fira text-xs text-[#F5E6D3]"
+                />
+              </label>
+
+              <label className="flex items-center gap-1.5 font-cinzel text-[10px] uppercase tracking-[0.5px] text-[#BFA98A]">
+                Pts / Case:
+                <input
+                  type="number"
+                  min={1}
+                  value={zipPointsPerCase}
+                  onChange={(e) =>
+                    setZipPointsPerCase(Math.max(1, Number(e.target.value) || 25))
+                  }
+                  className="w-16 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2 py-1 font-fira text-xs text-[#F5E6D3]"
+                />
+              </label>
+
+              <select
+                value={zipImportMode}
+                onChange={(e) =>
+                  setZipImportMode(e.target.value as "replace" | "append")
+                }
+                className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[10px] uppercase text-[#F5E6D3]"
+              >
+                <option value="replace">Replace Existing</option>
+                <option value="append">Append to List</option>
+              </select>
+
+              <input
+                ref={zipInputRef}
+                type="file"
+                accept=".zip,application/zip,application/x-zip-compressed"
+                onChange={(e) => void handleZipFileSelect(e.target.files?.[0])}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={() => zipInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3.5 py-1.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] transition-colors cursor-pointer"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Upload .zip
+              </button>
+            </div>
+          </div>
+
+          {zipMessage && (
+            <div
+              className={`rounded-[4px] border px-3 py-2 font-spectral text-xs ${
+                zipMessage.type === "ok"
+                  ? "border-[#22C55E]/40 bg-[#22C55E]/10 text-[#22C55E]"
+                  : "border-[#B91C1C] bg-[#991B1B]/20 text-[#FCA5A5]"
+              }`}
+            >
+              {zipMessage.text}
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">
