@@ -3,7 +3,7 @@
 import { Plus, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { LatexText } from "@/components/LatexText";
-import type { McqSection } from "@/lib/types";
+import type { MCQQuestion, McqSection } from "@/lib/types";
 
 interface McqQuestionModalProps {
   contestId?: string;
@@ -11,12 +11,14 @@ interface McqQuestionModalProps {
   sections?: McqSection[];
   defaultSectionId?: string;
   defaultSectionTitle?: string;
+  editingQuestion?: MCQQuestion;
   onClose: () => void;
   onSaved: () => void;
 }
 
 interface DraftMcqItem {
   id: string;
+  existingId?: string;
   prompt: string;
   options: { id: string; text: string }[];
   correctOptionId: string;
@@ -50,16 +52,35 @@ export function McqQuestionModal({
   sections = [],
   defaultSectionId,
   defaultSectionTitle,
+  editingQuestion,
   onClose,
   onSaved,
 }: McqQuestionModalProps) {
+  const isEditing = Boolean(editingQuestion);
   const resolvedSection =
     sections.find((s) => s.id === defaultSectionId) ?? sections[0];
   const targetSectionId = defaultSectionId || resolvedSection?.id;
   const targetSectionTitle =
     defaultSectionTitle || resolvedSection?.title || "Section A: General";
 
-  const [drafts, setDrafts] = useState<DraftMcqItem[]>(() => [makeEmptyDraft(1)]);
+  const [drafts, setDrafts] = useState<DraftMcqItem[]>(() => {
+    if (editingQuestion) {
+      return [
+        {
+          id: editingQuestion.id,
+          existingId: editingQuestion.id,
+          prompt: editingQuestion.prompt,
+          options: editingQuestion.options.map((o) => ({ id: o.id, text: o.text })),
+          correctOptionId: editingQuestion.correctOptionId,
+          points: editingQuestion.points,
+          negativePoints: editingQuestion.negativePoints ?? 0,
+          difficulty: editingQuestion.difficulty,
+          explanation: editingQuestion.explanation ?? "",
+        },
+      ];
+    }
+    return [makeEmptyDraft(1)];
+  });
   const [activeDraftIdx, setActiveDraftIdx] = useState(0);
   const [showPreview, setShowPreview] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -116,6 +137,7 @@ export function McqQuestionModal({
           sectionId: targetSectionId,
           newSectionTitle: targetSectionId ? undefined : targetSectionTitle,
           questions: drafts.map((d) => ({
+            ...(d.existingId ? { id: d.existingId } : {}),
             prompt: d.prompt,
             options: d.options,
             correctOptionId: d.correctOptionId,
@@ -144,7 +166,8 @@ export function McqQuestionModal({
         <div className="flex items-center justify-between border-b border-[#462E22] px-6 py-4">
           <div>
             <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
-              Add MCQ Set — <span className="text-[#CA8A04]">{targetSectionTitle}</span>
+              {isEditing ? "Edit MCQ Question" : "Add MCQ Set"} —{" "}
+              <span className="text-[#CA8A04]">{targetSectionTitle}</span>
             </h3>
             <p className="font-spectral text-xs text-[#BFA98A] mt-0.5">
               Supports LaTeX math via <code className="font-fira text-[#CA8A04]">$inline$</code> or{" "}
@@ -189,13 +212,15 @@ export function McqQuestionModal({
                   )}
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={handleAddDraft}
-                className="inline-flex items-center gap-1 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[11px] font-semibold text-[#CA8A04] hover:border-[#DAA520] cursor-pointer"
-              >
-                <Plus className="h-3 w-3" /> Add Another MCQ to Set
-              </button>
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={handleAddDraft}
+                  className="inline-flex items-center gap-1 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[11px] font-semibold text-[#CA8A04] hover:border-[#DAA520] cursor-pointer"
+                >
+                  <Plus className="h-3 w-3" /> Add Another MCQ to Set
+                </button>
+              )}
             </div>
 
             <button
@@ -371,6 +396,8 @@ export function McqQuestionModal({
             >
               {saving
                 ? "Saving..."
+                : isEditing
+                ? "Save Changes"
                 : `Save ${drafts.length} MCQ Question${drafts.length > 1 ? "s" : ""}`}
             </button>
           </div>

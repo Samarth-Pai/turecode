@@ -1,8 +1,8 @@
 "use client";
 
-import { CheckCircle2, Copy, Layers, Plus, RefreshCw, Search, ShieldAlert, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Layers, Pencil, Plus, RefreshCw, Search, ShieldAlert, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { LatexText } from "@/components/LatexText";
 import { LeaderboardPanel } from "@/components/LeaderboardPanel";
@@ -14,6 +14,7 @@ import {
   getQuestionSummary,
   getRoundStatus,
   type Contest,
+  type MCQQuestion,
   type Question,
   type Round,
 } from "@/lib/types";
@@ -33,12 +34,19 @@ function RoundEditorCard({
   questionBank,
   onUpdated,
   onOpenNewMcq,
+  onEditMcq,
 }: {
   contestId: string;
   round: Round;
   questionBank: Question[];
   onUpdated: () => void;
   onOpenNewMcq: (roundId: string, sectionId?: string, sectionTitle?: string) => void;
+  onEditMcq: (
+    roundId: string,
+    question: MCQQuestion,
+    sectionId?: string,
+    sectionTitle?: string
+  ) => void;
 }) {
   const [startLocal, setStartLocal] = useState(toLocalInputValue(round.startTime));
   const [endLocal, setEndLocal] = useState(toLocalInputValue(round.endTime));
@@ -385,19 +393,39 @@ function RoundEditorCard({
                               </span>
                             </div>
 
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() =>
-                                patchRound(
-                                  { action: "remove_question", questionId: q.id },
-                                  "Removed MCQ from section."
-                                )
-                              }
-                              className="rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#FCA5A5] hover:bg-[#991B1B]/35 cursor-pointer"
-                            >
-                              Remove
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {q.kind === "mcq" && (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    onEditMcq(
+                                      round.id,
+                                      q,
+                                      sec.id === "default-sec" ? undefined : sec.id,
+                                      sec.title
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#CA8A04] hover:border-[#DAA520] hover:bg-[#462E22]/50 cursor-pointer"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  Edit
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() =>
+                                  patchRound(
+                                    { action: "remove_question", questionId: q.id },
+                                    "Removed MCQ from section."
+                                  )
+                                }
+                                className="rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-2.5 py-1 font-cinzel text-[11px] font-semibold uppercase text-[#FCA5A5] hover:bg-[#991B1B]/35 cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -546,6 +574,7 @@ function RoundEditorCard({
 }
 
 function ModeratorContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { currentUser, loading: authLoading } = useUser();
 
@@ -588,7 +617,18 @@ function ModeratorContent() {
   const [refreshTick, setRefreshTick] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const [showNewContest, setShowNewContest] = useState(openNewContestFromUrl);
+  const [manualShowNewContest, setManualShowNewContest] = useState(false);
+  const showNewContest = manualShowNewContest || openNewContestFromUrl;
+  const setShowNewContest = (open: boolean) => {
+    setManualShowNewContest(open);
+    if (!open && openNewContestFromUrl) {
+      router.replace(
+        activeContest
+          ? `/moderator?contestId=${activeContest.id}&tab=${tab}`
+          : "/moderator"
+      );
+    }
+  };
   const [newContestTitle, setNewContestTitle] = useState("");
   const [newContestDesc, setNewContestDesc] = useState("");
   const [newContestJoinCode, setNewContestJoinCode] = useState("");
@@ -607,7 +647,15 @@ function ModeratorContent() {
     roundId?: string;
     sectionId?: string;
     sectionTitle?: string;
+    editingQuestion?: MCQQuestion;
   } | null>(null);
+
+  const [editingContestMeta, setEditingContestMeta] = useState(false);
+  const [editContestTitle, setEditContestTitle] = useState("");
+  const [editContestDesc, setEditContestDesc] = useState("");
+  const [savingContestMeta, setSavingContestMeta] = useState(false);
+  const [confirmDeleteContest, setConfirmDeleteContest] = useState(false);
+  const [deletingContest, setDeletingContest] = useState(false);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -688,6 +736,48 @@ function ModeratorContent() {
       setShowNewContest(false);
       await loadAll();
       setSelectedContestId(data.contest.id);
+      router.push(`/moderator?contestId=${data.contest.id}&tab=rounds`);
+    }
+  };
+
+  const handleSaveContestMeta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeContest || !editContestTitle.trim()) return;
+    setSavingContestMeta(true);
+    try {
+      const res = await fetch(`/api/contests/${activeContest.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editContestTitle.trim(),
+          description: editContestDesc.trim(),
+        }),
+      });
+      if (res.ok) {
+        setEditingContestMeta(false);
+        await loadAll();
+      }
+    } finally {
+      setSavingContestMeta(false);
+    }
+  };
+
+  const handleDeleteContest = async () => {
+    if (!activeContest) return;
+    setDeletingContest(true);
+    try {
+      const res = await fetch(`/api/contests/${activeContest.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setConfirmDeleteContest(false);
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("turecode_active_contest_id");
+        }
+        router.push("/");
+      }
+    } finally {
+      setDeletingContest(false);
     }
   };
 
@@ -795,7 +885,7 @@ function ModeratorContent() {
           {/* Selected Contest Management Header (no redundant contest dropdown) */}
           <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-5 shadow-[0_8px_24px_rgba(0,0,0,0.45)] space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-1">
+              <div className="space-y-1 flex-1 min-w-[260px]">
                 <div className="flex flex-wrap items-center gap-2 font-cinzel text-[11px] uppercase tracking-[1px] text-[#BFA98A]">
                   <Link href="/" className="hover:text-[#CA8A04] transition-colors">
                     ← All Contests
@@ -803,12 +893,64 @@ function ModeratorContent() {
                   <span>/</span>
                   <span className="text-[#CA8A04]">Contest Management</span>
                 </div>
-                <h1 className="font-cinzel text-2xl font-bold text-[#F5E6D3]">
-                  {activeContest.title}
-                </h1>
-                <p className="font-spectral text-xs text-[#BFA98A] max-w-3xl">
-                  {activeContest.description}
-                </p>
+                {editingContestMeta ? (
+                  <form onSubmit={handleSaveContestMeta} className="space-y-2 pt-1 max-w-2xl">
+                    <input
+                      required
+                      value={editContestTitle}
+                      onChange={(e) => setEditContestTitle(e.target.value)}
+                      placeholder="Contest title"
+                      className="w-full rounded-[4px] border border-[#CA8A04] bg-[#110A07] px-3 py-1.5 font-cinzel text-lg font-bold text-[#F5E6D3] focus:outline-none"
+                    />
+                    <textarea
+                      rows={2}
+                      value={editContestDesc}
+                      onChange={(e) => setEditContestDesc(e.target.value)}
+                      placeholder="Contest description"
+                      className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-1.5 font-spectral text-xs text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={savingContestMeta || !editContestTitle.trim()}
+                        className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-3 py-1 font-cinzel text-xs font-bold uppercase text-[#110A07] hover:bg-[#B8780A] disabled:opacity-50 cursor-pointer"
+                      >
+                        {savingContestMeta ? "Saving..." : "Save Name & Details"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingContestMeta(false)}
+                        className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-3 py-1 font-cinzel text-xs text-[#BFA98A] hover:text-[#F5E6D3] cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h1 className="font-cinzel text-2xl font-bold text-[#F5E6D3]">
+                        {activeContest.title}
+                      </h1>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditContestTitle(activeContest.title);
+                          setEditContestDesc(activeContest.description);
+                          setEditingContestMeta(true);
+                        }}
+                        title="Rename or edit contest details"
+                        className="inline-flex items-center gap-1 rounded-[4px] border border-[#462E22] bg-[#110A07] px-2.5 py-1 font-cinzel text-[10px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#CA8A04] transition-colors cursor-pointer"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Edit Name
+                      </button>
+                    </div>
+                    <p className="font-spectral text-xs text-[#BFA98A] max-w-3xl">
+                      {activeContest.description}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2.5">
@@ -859,6 +1001,47 @@ function ModeratorContent() {
                   <ShieldAlert className="h-3.5 w-3.5 text-[#CA8A04]" />
                   Strict Mode: {activeContest.strictMode ? "ON" : "OFF"}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowNewContest(true)}
+                  className="inline-flex items-center gap-1 rounded-[4px] border border-[#CA8A04]/60 bg-[#2A1810] px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#CA8A04] hover:border-[#DAA520] transition-colors cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New Contest
+                </button>
+
+                {confirmDeleteContest ? (
+                  <div className="inline-flex items-center gap-1.5 rounded-[4px] border border-[#B91C1C] bg-[#991B1B]/25 px-2.5 py-1">
+                    <span className="font-cinzel text-[10px] font-bold uppercase text-[#FCA5A5]">
+                      Delete?
+                    </span>
+                    <button
+                      type="button"
+                      disabled={deletingContest}
+                      onClick={handleDeleteContest}
+                      className="rounded-[2px] bg-[#B91C1C] px-2 py-0.5 font-cinzel text-[10px] font-bold uppercase text-white hover:bg-[#DC2626] disabled:opacity-50 cursor-pointer"
+                    >
+                      {deletingContest ? "..." : "Yes"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteContest(false)}
+                      className="rounded-[2px] border border-[#462E22] bg-[#110A07] px-2 py-0.5 font-cinzel text-[10px] text-[#BFA98A] hover:text-[#F5E6D3] cursor-pointer"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteContest(true)}
+                    className="inline-flex items-center gap-1 rounded-[4px] border border-[#B91C1C]/70 bg-[#991B1B]/20 px-3 py-1.5 font-cinzel text-xs font-semibold uppercase tracking-[0.5px] text-[#FCA5A5] hover:bg-[#991B1B]/35 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete Contest
+                  </button>
+                )}
               </div>
             </div>
 
@@ -933,6 +1116,15 @@ function ModeratorContent() {
                           sectionTitle: secTitle,
                         })
                       }
+                      onEditMcq={(rId, question, secId, secTitle) =>
+                        setMcqModalTarget({
+                          contestId: activeContest.id,
+                          roundId: rId,
+                          sectionId: secId,
+                          sectionTitle: secTitle,
+                          editingQuestion: question,
+                        })
+                      }
                     />
                   ))}
               </div>
@@ -951,7 +1143,24 @@ function ModeratorContent() {
             />
           )}
         </>
-      ) : null}
+      ) : (
+        <div className="rounded-[4px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-10 text-center space-y-4">
+          <h2 className="font-cinzel text-xl font-bold text-[#F5E6D3]">
+            No Contests Created Yet
+          </h2>
+          <p className="font-spectral text-sm text-[#BFA98A]">
+            Create an empty contest to start adding MCQ and Coding rounds.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowNewContest(true)}
+            className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-[0.5px] text-[#110A07] hover:bg-[#B8780A] cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Create New Contest
+          </button>
+        </div>
+      )}
 
       {/* New Contest Modal (with Platform Question Bank Reuse) */}
       {showNewContest && (
@@ -1148,6 +1357,7 @@ function ModeratorContent() {
           }
           defaultSectionId={mcqModalTarget.sectionId}
           defaultSectionTitle={mcqModalTarget.sectionTitle}
+          editingQuestion={mcqModalTarget.editingQuestion}
           onClose={() => setMcqModalTarget(null)}
           onSaved={() => {
             loadAll();

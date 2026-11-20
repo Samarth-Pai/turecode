@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "bun run lib/lan-server.ts dev",
     "build": "next build",
-    "start": "next start -H 0.0.0.0",
+    "start": "bun run lib/lan-server.ts start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "sandbox:build": "gcc -O2 sandbox/daemon.c -o sandbox/daemon",

@@ -68,6 +68,14 @@ export default function HomePage() {
   const [inlineCode, setInlineCode] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const [showCreateContest, setShowCreateContest] = useState(false);
+  const [newContestTitle, setNewContestTitle] = useState("");
+  const [newContestDesc, setNewContestDesc] = useState("");
+  const [newContestJoinCode, setNewContestJoinCode] = useState("");
+  const [newContestStrict, setNewContestStrict] = useState(false);
+  const [creatingContest, setCreatingContest] = useState(false);
+  const [createContestError, setCreateContestError] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     try {
       const res = await fetch("/api/contests", { cache: "no-store" });
@@ -128,6 +136,43 @@ export default function HomePage() {
     setTimeout(() => setCopiedId(null), 1800);
   };
 
+  const handleCreateContest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !newContestTitle.trim()) return;
+    setCreatingContest(true);
+    setCreateContestError(null);
+    try {
+      const res = await fetch("/api/contests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newContestTitle.trim(),
+          description: newContestDesc.trim(),
+          joinCode: newContestJoinCode.trim(),
+          strictMode: newContestStrict,
+          organizerId: currentUser.id,
+          organizerName: currentUser.name,
+          rounds: [],
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setCreateContestError(json.error || "Failed to create contest");
+        return;
+      }
+      setShowCreateContest(false);
+      setNewContestTitle("");
+      setNewContestDesc("");
+      setNewContestJoinCode("");
+      setNewContestStrict(false);
+      router.push(`/moderator?contestId=${json.contest.id}&tab=rounds`);
+    } catch {
+      setCreateContestError("Network error creating contest");
+    } finally {
+      setCreatingContest(false);
+    }
+  };
+
   const isModerator = currentUser?.role === "moderator";
   const contests = data?.contests ?? [];
 
@@ -161,13 +206,17 @@ export default function HomePage() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             {isModerator ? (
-              <Link
-                href="/moderator?newContest=1"
-                className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-6 py-3 font-cinzel text-sm font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300"
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateContestError(null);
+                  setShowCreateContest(true);
+                }}
+                className="inline-flex items-center gap-2 rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-6 py-3 font-cinzel text-sm font-bold uppercase tracking-[1px] text-[#110A07] shadow-[0_2px_8px_rgba(202,138,4,0.25)] hover:bg-[#B8780A] transition-all duration-300 cursor-pointer"
               >
                 + Create New Contest
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </button>
             ) : !currentUser ? (
               <Link
                 href="/login"
@@ -535,6 +584,96 @@ export default function HomePage() {
           </div>
         </aside>
       </div>
+
+      {showCreateContest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#110A07]/85 p-4 backdrop-blur-md">
+          <div className="w-full max-w-xl rounded-[6px] border border-[#462E22] border-t-2 border-t-[#CA8A04] bg-[#1D110B] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.65)] space-y-4">
+            <h3 className="font-cinzel text-base font-bold text-[#F5E6D3]">
+              Create New Empty Contest
+            </h3>
+            <p className="font-spectral text-xs text-[#BFA98A]">
+              Creates a blank contest so you can add custom MCQ or Coding rounds right away.
+            </p>
+            <form onSubmit={handleCreateContest} className="space-y-3.5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    Contest Title
+                  </label>
+                  <input
+                    required
+                    value={newContestTitle}
+                    onChange={(e) => setNewContestTitle(e.target.value)}
+                    placeholder="e.g., Winter CodeFest 2026"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                    Custom Joining Code (optional)
+                  </label>
+                  <input
+                    value={newContestJoinCode}
+                    onChange={(e) => setNewContestJoinCode(e.target.value.toUpperCase())}
+                    placeholder="e.g., WINTER-26"
+                    className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 font-fira text-sm uppercase text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block font-cinzel text-[11px] font-semibold uppercase tracking-[0.5px] text-[#BFA98A] mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={newContestDesc}
+                  onChange={(e) => setNewContestDesc(e.target.value)}
+                  placeholder="Describe rounds and rules..."
+                  className="w-full rounded-[4px] border border-[#462E22] bg-[#110A07] px-3 py-2 text-sm text-[#F5E6D3] focus:border-[#CA8A04] focus:outline-none"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 rounded-[4px] border border-[#581C87] bg-[#110A07] p-3 text-xs text-[#F5E6D3] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newContestStrict}
+                  onChange={(e) => setNewContestStrict(e.target.checked)}
+                  className="accent-[#CA8A04]"
+                />
+                <span>
+                  <strong className="font-cinzel text-[#CA8A04]">
+                    Enable Strict Proctoring Mode
+                  </strong>{" "}
+                  (Fullscreen required, max 7 tab-switch warnings)
+                </span>
+              </label>
+
+              {createContestError && (
+                <div className="rounded-[4px] border border-[#B91C1C] bg-[#991B1B]/20 px-3 py-2 text-xs text-[#FCA5A5]">
+                  {createContestError}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateContest(false)}
+                  className="rounded-[4px] border border-[#462E22] bg-[#2A1810] px-4 py-2 font-cinzel text-xs text-[#BFA98A] hover:border-[#CA8A04] hover:text-[#F5E6D3] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingContest || !newContestTitle.trim()}
+                  className="rounded-[4px] border border-[#DAA520] bg-[#CA8A04] px-4 py-2 font-cinzel text-xs font-bold uppercase text-[#110A07] hover:bg-[#B8780A] disabled:opacity-50 cursor-pointer"
+                >
+                  {creatingContest ? "Creating..." : "Create Contest"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
