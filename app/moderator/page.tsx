@@ -10,6 +10,7 @@ import { McqQuestionModal } from "@/components/McqQuestionModal";
 import { ModeratorSubmissionsFeed } from "@/components/ModeratorSubmissionsFeed";
 import { PlatformQuestionBank } from "@/components/PlatformQuestionBank";
 import { useUser } from "@/components/UserContext";
+import { recordServerTime, useSyncedNow } from "@/lib/server-clock";
 import {
   getQuestionSummary,
   getRoundStatus,
@@ -32,6 +33,7 @@ function RoundEditorCard({
   contestId,
   round,
   questionBank,
+  serverNowMs,
   onUpdated,
   onOpenNewMcq,
   onEditMcq,
@@ -39,6 +41,7 @@ function RoundEditorCard({
   contestId: string;
   round: Round;
   questionBank: Question[];
+  serverNowMs: number;
   onUpdated: () => void;
   onOpenNewMcq: (roundId: string, sectionId?: string, sectionTitle?: string) => void;
   onEditMcq: (
@@ -56,7 +59,7 @@ function RoundEditorCard({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const status = getRoundStatus(round);
+  const status = getRoundStatus(round, serverNowMs);
   const qMap = new Map(questionBank.map((q) => [q.id, q]));
   const assignedQuestions = round.questionIds
     .map((id) => qMap.get(id))
@@ -616,6 +619,8 @@ function ModeratorContent() {
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  const serverNowMs = useSyncedNow(clockOffsetMs);
 
   const [manualShowNewContest, setManualShowNewContest] = useState(false);
   const showNewContest = manualShowNewContest || openNewContestFromUrl;
@@ -663,6 +668,9 @@ function ModeratorContent() {
       const res = await fetch("/api/contests", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
+        if (typeof data.serverNow === "number") {
+          setClockOffsetMs(recordServerTime(data.serverNow));
+        }
         setContests(data.contests || []);
         setQuestions(data.questions || []);
         setSelectedContestId((prev) => {
@@ -683,6 +691,9 @@ function ModeratorContent() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!active || !data) return;
+        if (typeof data.serverNow === "number") {
+          setClockOffsetMs(recordServerTime(data.serverNow));
+        }
         setContests(data.contests || []);
         setQuestions(data.questions || []);
         setSelectedContestId((prev) => {
@@ -1104,6 +1115,7 @@ function ModeratorContent() {
                       contestId={activeContest.id}
                       round={round}
                       questionBank={questions}
+                      serverNowMs={serverNowMs}
                       onUpdated={() => {
                         loadAll();
                         setRefreshTick((t) => t + 1);

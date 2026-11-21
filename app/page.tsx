@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { useUser } from "@/components/UserContext";
+import { recordServerTime, useSyncedNow } from "@/lib/server-clock";
 import { getRoundStatus, type Contest, type Question } from "@/lib/types";
 
 interface ContestsPayload {
@@ -55,6 +56,8 @@ export default function HomePage() {
   const { currentUser, enrolledContestIds, joinContestByCode } = useUser();
   const [data, setData] = useState<ContestsPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  const nowMs = useSyncedNow(clockOffsetMs);
   const [filter, setFilter] = useState<"all" | "active" | "upcoming">("all");
 
   const [joinCodeInput, setJoinCodeInput] = useState("");
@@ -79,7 +82,13 @@ export default function HomePage() {
   const loadData = useCallback(async () => {
     try {
       const res = await fetch("/api/contests", { cache: "no-store" });
-      if (res.ok) setData(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        if (typeof json.serverNow === "number") {
+          setClockOffsetMs(recordServerTime(json.serverNow));
+        }
+        setData(json);
+      }
     } finally {
       setLoading(false);
     }
@@ -90,7 +99,12 @@ export default function HomePage() {
     fetch("/api/contests", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        if (active && json) setData(json);
+        if (active && json) {
+          if (typeof json.serverNow === "number") {
+            setClockOffsetMs(recordServerTime(json.serverNow));
+          }
+          setData(json);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -178,7 +192,7 @@ export default function HomePage() {
 
   const filteredContests = contests.filter((c) => {
     if (filter === "all") return true;
-    const statuses = c.rounds.map((r) => getRoundStatus(r));
+    const statuses = c.rounds.map((r) => getRoundStatus(r, nowMs));
     if (filter === "active") return statuses.includes("ACTIVE");
     if (filter === "upcoming") return statuses.includes("UPCOMING");
     return true;
@@ -321,10 +335,10 @@ export default function HomePage() {
                   .slice()
                   .sort((a, b) => a.order - b.order);
                 const hasLive = sortedRounds.some(
-                  (r) => getRoundStatus(r) === "ACTIVE"
+                  (r) => getRoundStatus(r, nowMs) === "ACTIVE"
                 );
                 const hasUpcoming = sortedRounds.some(
-                  (r) => getRoundStatus(r) === "UPCOMING"
+                  (r) => getRoundStatus(r, nowMs) === "UPCOMING"
                 );
                 const overallStatus = hasLive
                   ? "ACTIVE"
@@ -471,7 +485,7 @@ export default function HomePage() {
                       </div>
                       <div className="grid gap-2.5 sm:grid-cols-2">
                         {sortedRounds.map((round) => {
-                          const rStatus = getRoundStatus(round);
+                          const rStatus = getRoundStatus(round, nowMs);
                           return (
                             <div
                               key={round.id}

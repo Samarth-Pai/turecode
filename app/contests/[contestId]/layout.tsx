@@ -4,6 +4,7 @@ import { useParams, usePathname } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { StrictModeGuard } from "@/components/StrictModeGuard";
 import { useUser } from "@/components/UserContext";
+import { recordServerTime, useSyncedNow } from "@/lib/server-clock";
 import { getRoundStatus, type Contest } from "@/lib/types";
 
 function ContestProctoringLayoutInner({
@@ -18,7 +19,8 @@ function ContestProctoringLayoutInner({
 
   const [contest, setContest] = useState<Contest | null>(null);
   const [serverEnrolled, setServerEnrolled] = useState(false);
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  const nowMs = useSyncedNow(clockOffsetMs);
 
   useEffect(() => {
     if (!contestId) return;
@@ -31,6 +33,9 @@ function ContestProctoringLayoutInner({
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (!active || !data?.contest) return;
+          if (typeof data.serverNow === "number") {
+            setClockOffsetMs(recordServerTime(data.serverNow));
+          }
           setContest(data.contest);
           setServerEnrolled(Boolean(data.isEnrolled));
         })
@@ -38,12 +43,10 @@ function ContestProctoringLayoutInner({
     };
 
     load();
-    const clockTimer = setInterval(() => setNowMs(Date.now()), 1000);
     const pollTimer = setInterval(load, 5000);
 
     return () => {
       active = false;
-      clearInterval(clockTimer);
       clearInterval(pollTimer);
     };
   }, [contestId, pathname, currentUser?.id]);

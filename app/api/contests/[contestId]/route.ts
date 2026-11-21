@@ -53,6 +53,7 @@ export async function GET(
       rounds: populatedRounds,
     },
     isEnrolled,
+    serverNow: Date.now(),
     leaderboard: leaderboard.entries,
     maxPossibleScore: leaderboard.maxPossibleScore,
     questionBank: db.questions,

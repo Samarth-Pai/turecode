@@ -55,6 +55,7 @@ export async function GET(
     },
     round,
     scheduleStatus: getRoundStatus(round),
+    serverNow: Date.now(),
     questions,
   });
 }

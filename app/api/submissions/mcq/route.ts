@@ -79,18 +79,23 @@ export async function POST(request: Request) {
 
       const user = db.users.find((u) => u.id === userId);
       const isMod = user?.role === "moderator" || Boolean(body.moderatorOverride);
-      const scheduleStatus = getRoundStatus(round);
-      if (scheduleStatus !== "ACTIVE" && !isMod) {
+      const nowMs = Date.now();
+      const roundStartMs = new Date(round.startTime).getTime();
+      const roundEndMs = new Date(round.endTime).getTime();
+      const isAutoSubmitGrace =
+        Boolean(body.autoSubmit) &&
+        nowMs >= roundStartMs &&
+        nowMs <= roundEndMs + 60_000;
+      const scheduleStatus = getRoundStatus(round, nowMs);
+      if (scheduleStatus !== "ACTIVE" && !isMod && !isAutoSubmitGrace) {
         return {
           error: `Round is ${scheduleStatus}. Submissions are only accepted while ACTIVE.`,
           status: 403 as const,
         };
       }
 
-      const nowMs = Date.now();
       const now = new Date(nowMs).toISOString();
       const recorded: MCQSubmission[] = [];
-      const roundStartMs = new Date(round.startTime).getTime();
 
       for (const ans of answers) {
         if (!round.questionIds.includes(ans.questionId)) continue;

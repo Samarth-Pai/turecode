@@ -6,6 +6,7 @@ import React, { Suspense, useEffect, useState } from "react";
 import { CodingRoundArena } from "@/components/CodingRoundArena";
 import { McqRoundArena } from "@/components/McqRoundArena";
 import { useUser } from "@/components/UserContext";
+import { recordServerTime } from "@/lib/server-clock";
 import type {
   CodingQuestion,
   MCQQuestion,
@@ -23,6 +24,7 @@ interface RoundPayload {
   };
   round: Round;
   scheduleStatus: RoundScheduleStatus;
+  serverNow?: number;
   questions: Question[];
 }
 
@@ -33,6 +35,7 @@ function RoundArenaContent() {
   const { currentUser, enrolledContestIds, loading: authLoading } = useUser();
 
   const [data, setData] = useState<RoundPayload | null>(null);
+  const [serverOffsetMs, setServerOffsetMs] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,7 +43,12 @@ function RoundArenaContent() {
     fetch(`/api/contests/${contestId}/rounds/${roundId}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        if (active && json) setData(json);
+        if (active && json) {
+          if (typeof json.serverNow === "number") {
+            setServerOffsetMs(recordServerTime(json.serverNow));
+          }
+          setData(json);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -166,6 +174,7 @@ function RoundArenaContent() {
             round={round}
             questions={questions.filter((q): q is MCQQuestion => q.kind === "mcq")}
             scheduleStatus={scheduleStatus}
+            serverOffsetMs={serverOffsetMs}
           />
         ) : (
           <CodingRoundArena
@@ -174,6 +183,7 @@ function RoundArenaContent() {
             round={round}
             questions={questions.filter((q): q is CodingQuestion => q.kind === "coding")}
             scheduleStatus={scheduleStatus}
+            serverOffsetMs={serverOffsetMs}
           />
         )}
       </div>

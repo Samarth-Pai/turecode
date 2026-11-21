@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, ChevronLeft, ChevronRight, Flag, Layers, Send } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock, Flag, Layers, Send } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LatexText } from "@/components/LatexText";
 import { useUser } from "@/components/UserContext";
+import { formatCountdown, useSyncedNow } from "@/lib/server-clock";
 import type { MCQQuestion, MCQSubmission, McqSection, Round } from "@/lib/types";
 
 interface McqRoundArenaProps {
@@ -14,6 +15,7 @@ interface McqRoundArenaProps {
   round: Round;
   questions: MCQQuestion[];
   scheduleStatus: "UPCOMING" | "ACTIVE" | "ENDED";
+  serverOffsetMs?: number;
 }
 
 interface IndexedMcqItem {
@@ -29,8 +31,13 @@ export function McqRoundArena({
   round,
   questions,
   scheduleStatus,
+  serverOffsetMs = 0,
 }: McqRoundArenaProps) {
   const { currentUser } = useUser();
+  const nowMs = useSyncedNow(serverOffsetMs);
+  const endTimeMs = useMemo(() => new Date(round.endTime).getTime(), [round.endTime]);
+  const remainingMs = nowMs > 0 ? Math.max(0, endTimeMs - nowMs) : null;
+  const autoSubmittedRef = useRef(false);
   const answersStorageKey = `turecode_mcq_answers_${contestId}_${round.id}`;
   const flaggedStorageKey = `turecode_mcq_flagged_${contestId}_${round.id}`;
 
@@ -215,6 +222,95 @@ export function McqRoundArena({
     }
   }, [contestId, round.id, currentQId, currentUser]);
 
+  const submitAssessment = useCallback(
+    async ({ isAuto = false }: { isAuto?: boolean } = {}) => {
+      if (!currentUser) return;
+      setError(null);
+
+      const now = Date.now();
+      if (lastActiveQIdRef.current) {
+        const prevId = lastActiveQIdRef.current;
+        accumulatedSecRef.current[prevId] =
+          (accumulatedSecRef.current[prevId] ?? 0) +
+          Math.max(0, (now - lastEnterMsRef.current) / 1000);
+        lastEnterMsRef.current = now;
+      }
+
+      const payloadAnswers = Object.entries(answers).map(
+        ([questionId, selectedOptionId]) => ({
+          questionId,
+          selectedOptionId,
+          timeTakenSeconds: Math.max(
+            1,
+            Math.round(accumulatedSecRef.current[questionId] ?? 0)
+          ),
+        })
+      );
+
+      if (payloadAnswers.length === 0) {
+        if (isAuto) {
+          setSubmittedNotice(
+            "Time is up! Round has ended (no MCQ responses were attempted)."
+          );
+        } else {
+          setError("Please answer at least one question before submitting.");
+        }
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const res = await fetch("/api/submissions/mcq", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contestId,
+            roundId: round.id,
+            userId: currentUser.id,
+            answers: payloadAnswers,
+            autoSubmit: isAuto,
+            moderatorOverride: currentUser.role === "moderator",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to submit MCQ round");
+          return;
+        }
+        setSubmittedNotice(
+          isAuto
+            ? `Time is up! Your ${payloadAnswers.length} attempted MCQ response(s) were automatically submitted.`
+            : `Assessment submitted! ${payloadAnswers.length} response(s) recorded for moderator evaluation.`
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [answers, contestId, currentUser, round.id]
+  );
+
+  const handleSubmitAll = () => submitAssessment({ isAuto: false });
+
+  useEffect(() => {
+    if (
+      scheduleStatus !== "ACTIVE" ||
+      remainingMs === null ||
+      remainingMs > 0 ||
+      autoSubmittedRef.current ||
+      !currentUser ||
+      currentUser.role === "moderator" ||
+      submittedNotice
+    ) {
+      return;
+    }
+
+    autoSubmittedRef.current = true;
+    const timer = setTimeout(() => {
+      void submitAssessment({ isAuto: true });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [scheduleStatus, remainingMs, currentUser, submittedNotice, submitAssessment]);
+
   if (orderedItems.length === 0 || !currentItem) {
     return (
       <div className="mx-auto max-w-4xl p-8 text-center font-spectral text-sm text-[#BFA98A]">
@@ -227,62 +323,8 @@ export function McqRoundArena({
   const answeredCount = orderedItems.filter((it) => Boolean(answers[it.question.id])).length;
   const canSubmit =
     Boolean(currentUser) &&
-    (scheduleStatus === "ACTIVE" || currentUser?.role === "moderator");
-
-  const handleSubmitAll = async () => {
-    if (!currentUser) return;
-    setError(null);
-
-    const now = Date.now();
-    if (lastActiveQIdRef.current) {
-      const prevId = lastActiveQIdRef.current;
-      accumulatedSecRef.current[prevId] =
-        (accumulatedSecRef.current[prevId] ?? 0) +
-        Math.max(0, (now - lastEnterMsRef.current) / 1000);
-      lastEnterMsRef.current = now;
-    }
-
-    const payloadAnswers = Object.entries(answers).map(
-      ([questionId, selectedOptionId]) => ({
-        questionId,
-        selectedOptionId,
-        timeTakenSeconds: Math.max(
-          1,
-          Math.round(accumulatedSecRef.current[questionId] ?? 0)
-        ),
-      })
-    );
-
-    if (payloadAnswers.length === 0) {
-      setError("Please answer at least one question before submitting.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/submissions/mcq", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contestId,
-          roundId: round.id,
-          userId: currentUser.id,
-          answers: payloadAnswers,
-          moderatorOverride: currentUser.role === "moderator",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to submit MCQ round");
-        return;
-      }
-      setSubmittedNotice(
-        `Assessment submitted! ${payloadAnswers.length} response(s) recorded for moderator evaluation.`
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    (scheduleStatus === "ACTIVE" || currentUser?.role === "moderator") &&
+    (remainingMs === null || remainingMs > 0 || currentUser?.role === "moderator");
 
   return (
     <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 space-y-5 font-spectral text-[#F5E6D3]">
@@ -305,6 +347,24 @@ export function McqRoundArena({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {remainingMs !== null && (
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-[4px] border px-3.5 py-2 font-fira text-xs font-bold ${
+                remainingMs <= 0
+                  ? "border-[#B91C1C] bg-[#991B1B]/25 text-[#FCA5A5]"
+                  : remainingMs <= 60_000
+                  ? "border-[#B91C1C] bg-[#991B1B]/20 text-[#F87171] animate-pulse"
+                  : remainingMs <= 300_000
+                  ? "border-[#CA8A04] bg-[#CA8A04]/15 text-[#CA8A04]"
+                  : "border-[#462E22] bg-[#110A07] text-[#F5E6D3]"
+              }`}
+              title="Time remaining in this round"
+            >
+              <Clock className="h-3.5 w-3.5 text-[#CA8A04]" />
+              {remainingMs <= 0 ? "Ended" : formatCountdown(remainingMs)}
+            </div>
+          )}
+
           <div className="rounded-[4px] border border-[#462E22] bg-[#110A07] px-3.5 py-2 font-fira text-xs text-[#BFA98A]">
             Answered:{" "}
             <strong className="text-[#CA8A04]">{answeredCount}</strong> /{" "}

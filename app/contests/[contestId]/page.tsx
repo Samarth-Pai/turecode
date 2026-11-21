@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { useUser } from "@/components/UserContext";
+import { recordServerTime, useSyncedNow } from "@/lib/server-clock";
 import { getRoundStatus, type Contest, type Question, type Round } from "@/lib/types";
 
 function toLocalInputValue(iso: string): string {
@@ -55,7 +56,8 @@ function ContestLobbyContent() {
 
   const [data, setData] = useState<ContestDetailPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
+  const nowMs = useSyncedNow(clockOffsetMs);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinBusy, setJoinBusy] = useState(false);
@@ -113,7 +115,13 @@ function ContestLobbyContent() {
 
   const reloadContest = useCallback(async () => {
     const res = await fetch(`/api/contests/${contestId}`, { cache: "no-store" });
-    if (res.ok) setData(await res.json());
+    if (res.ok) {
+      const json = await res.json();
+      if (typeof json.serverNow === "number") {
+        setClockOffsetMs(recordServerTime(json.serverNow));
+      }
+      setData(json);
+    }
   }, [contestId]);
 
   useEffect(() => {
@@ -121,15 +129,18 @@ function ContestLobbyContent() {
     fetch(`/api/contests/${contestId}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        if (active && json) setData(json);
+        if (active && json) {
+          if (typeof json.serverNow === "number") {
+            setClockOffsetMs(recordServerTime(json.serverNow));
+          }
+          setData(json);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
       });
-    const timer = setInterval(() => setNowMs(Date.now()), 1000);
     return () => {
       active = false;
-      clearInterval(timer);
     };
   }, [contestId, currentUser?.id]);
 

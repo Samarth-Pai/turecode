@@ -21,6 +21,7 @@ export async function GET() {
   return NextResponse.json({
     contests: sanitizedContests,
     questions: db.questions,
+    serverNow: Date.now(),
     stats: {
       totalContests: db.contests.length,
       totalQuestions: db.questions.length,

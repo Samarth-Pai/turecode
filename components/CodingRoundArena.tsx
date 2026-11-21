@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Clock,
   Code2,
   Columns2,
   Lock,
@@ -28,6 +29,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CodeEditor } from "@/components/CodeEditor";
 import { useUser } from "@/components/UserContext";
+import { formatCountdown, useSyncedNow } from "@/lib/server-clock";
 import {
   SUPPORTED_LANGUAGES,
   type CodingQuestion,
@@ -43,6 +45,7 @@ interface CodingRoundArenaProps {
   round: Round;
   questions: CodingQuestion[];
   scheduleStatus: "UPCOMING" | "ACTIVE" | "ENDED";
+  serverOffsetMs?: number;
 }
 
 interface RunOrSubmitOutput {
@@ -88,8 +91,12 @@ export function CodingRoundArena({
   round,
   questions,
   scheduleStatus,
+  serverOffsetMs = 0,
 }: CodingRoundArenaProps) {
   const { currentUser } = useUser();
+  const nowMs = useSyncedNow(serverOffsetMs);
+  const endTimeMs = useMemo(() => new Date(round.endTime).getTime(), [round.endTime]);
+  const remainingMs = nowMs > 0 ? Math.max(0, endTimeMs - nowMs) : null;
   const [activeQIndex, setActiveQIndex] = useState(0);
   const [language, setLanguage] = useState<LanguageId>("cpp");
   const [leftTab, setLeftTab] = useState<"problem" | "submissions">("problem");
@@ -452,8 +459,26 @@ export function CodingRoundArena({
           </div>
         </div>
 
-        {/* Icon-Only Layout Presets + Run / Submit */}
+        {/* Icon-Only Layout Presets + Timer + Run / Submit */}
         <div className="flex flex-wrap items-center gap-1.5">
+          {remainingMs !== null && (
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-1 font-fira text-xs font-bold ${
+                remainingMs <= 0
+                  ? "border-[#B91C1C] bg-[#991B1B]/25 text-[#FCA5A5]"
+                  : remainingMs <= 60_000
+                  ? "border-[#B91C1C] bg-[#991B1B]/20 text-[#F87171] animate-pulse"
+                  : remainingMs <= 300_000
+                  ? "border-[#CA8A04] bg-[#CA8A04]/15 text-[#CA8A04]"
+                  : "border-[#462E22] bg-[#110A07] text-[#F5E6D3]"
+              }`}
+              title="Time remaining in this round"
+            >
+              <Clock className="h-3.5 w-3.5 text-[#CA8A04]" />
+              {remainingMs <= 0 ? "Ended" : formatCountdown(remainingMs)}
+            </div>
+          )}
+
           <div className="hidden lg:flex items-center gap-0.5 rounded-[4px] border border-[#462E22] bg-[#110A07] p-0.5">
             <button
               type="button"
